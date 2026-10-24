@@ -89,6 +89,7 @@ nav button.on{color:var(--p)}
 <label>Tarikh</label><input type="date" id="fd">
 <div class="g2"><div><label>Kab chalai</label><input type="time" id="fs"></div><div><label>Kab band ki</label><input type="time" id="fe"></div></div>
 <label>Rate (Rs per ghanta)</label><input type="number" id="fr" inputmode="decimal">
+<label>Paise (riyat ke liye khud badal sakte hain)</label><input type="number" id="fa" inputmode="decimal">
 <div class="prev" id="prev">-</div>
 <button class="btn" id="fSave">Save karein</button>
 <button class="btn d" id="fDel" hidden>Delete karein</button>
@@ -117,7 +118,8 @@ const fd=d=>new Date(d+'T00:00').toLocaleDateString('en-GB',{weekday:'short',day
 const dur=t=>{const m=Math.round(t/60000);return Math.floor(m/60)+' ghanta '+p2(m%60)+' min'};
 const rs=n=>'Rs '+Math.round(n).toLocaleString('en-IN');
 const ms=e=>new Date(e.end_at)-new Date(e.start_at);
-const amt=e=>Math.round(ms(e)/3600000*e.rate);
+const amt=e=>e.amount!=null?Math.round(e.amount):Math.round(ms(e)/3600000*e.rate);
+const disc=e=>e.amount!=null&&Math.round(e.amount)!==Math.round(ms(e)/3600000*e.rate);
 const sum=l=>l.reduce((a,e)=>{a.ms+=ms(e);a.m+=amt(e);return a},{ms:0,m:0});
 const COL=['#0b5d6b','#2e7d32','#6a4c93','#c26a1b','#1565c0','#ad1457'];
 const col=n=>COL[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%COL.length];
@@ -126,6 +128,7 @@ const byName=(a,b)=>a.name.localeCompare(b.name);
 const cn=id=>(customers.find(c=>c.id===id)||{}).name||'';
 const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
 const LS='tk_data';
+let manual=false;
 let customers=[],entries=[],Q=[],view='khata',cid=null,flt='all',day=ymd(new Date()),editId=null,custEdit=null,flushing=false,ch=null;
 const cs=c=>{const s=sum(entries.filter(e=>e.customer_id===c.id)),o=+c.opening||0;return{ms:s.ms,n:s.m,o,m:s.m+o}};
 
@@ -261,7 +264,7 @@ function rDetail(){
   h+=keys.length?keys.map(d=>{
     const g=groups[d].slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), gs=sum(g);
     return `<div class="day"><span>${fd(d)}</span><span>${dur(gs.ms)} &middot; ${rs(gs.m)}</span></div>`+
-    g.map(e=>`<div class="card row" data-e="${e.id}"><div class="grow"><b>${tm(e.start_at)} se ${tm(e.end_at)}</b><div class="mu">${dur(ms(e))} &middot; Rs ${e.rate}/ghanta</div></div><b>${rs(amt(e))}</b></div>`).join('');
+    g.map(e=>`<div class="card row" data-e="${e.id}"><div class="grow"><b>${tm(e.start_at)} se ${tm(e.end_at)}</b><div class="mu">${dur(ms(e))} &middot; Rs ${e.rate}/ghanta${disc(e)?' &middot; riyat':''}</div></div><b>${rs(amt(e))}</b></div>`).join('');
   }).join(''):'<div class="empty">Is muddat mein koi entry nahi.</div>';
   if(all&&k.o>0) h+=`<div class="day"><span>PURANA HISAAB</span><span></span></div><div class="card row" id="opn"><div class="grow"><b>Pehle ka hisaab</b><div class="mu">Purani book se (tap karke badlein)</div></div><b>${rs(k.o)}</b></div>`;
   h+=`<div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
@@ -279,7 +282,7 @@ function rDaily(){
   const list=entries.filter(e=>ymd(new Date(e.start_at))===day).sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), s=sum(list);
   $('#main').innerHTML=`<input type="date" id="day" value="${day}" style="margin-bottom:14px">
   <div class="hero"><div class="two"><div><small>Total waqt</small><b>${dur(s.ms)}</b></div><div><small>Total paise</small><b>${rs(s.m)}</b></div></div></div>`+
-  (list.length?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b>${esc(cn(e.customer_id))}</b><div class="mu">${tm(e.start_at)} se ${tm(e.end_at)} &middot; ${dur(ms(e))}</div></div><b>${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
+  (list.length?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b>${esc(cn(e.customer_id))}</b><div class="mu">${tm(e.start_at)} se ${tm(e.end_at)} &middot; ${dur(ms(e))}${disc(e)?' &middot; riyat':''}</div></div><b>${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
   $('#day').onchange=ev=>{day=ev.target.value||ymd(new Date());rDaily()};
   bindE();
 }
@@ -308,10 +311,14 @@ function calc(){
   if(!d||!s||!e||isNaN(r)){$('#prev').textContent='-';return null}
   const a=new Date(d+'T'+s), b=new Date(d+'T'+e);
   if(b<=a) b.setDate(b.getDate()+1);
-  const t=b-a; $('#prev').textContent=dur(t)+'  =  '+rs(t/3600000*r);
-  return {a,b,r};
+  const t=b-a, auto=Math.round(t/3600000*r);
+  if(!manual) $('#fa').value=auto;
+  const fin=manual?(parseFloat($('#fa').value)||0):auto;
+  $('#prev').textContent=dur(t)+'  =  '+rs(fin)+(manual&&fin!==auto?'  (riyat '+rs(auto-fin)+')':'');
+  return {a,b,r,fin};
 }
 ['fd','fs','fe','fr'].forEach(i=>$('#'+i).oninput=calc);
+$('#fa').oninput=()=>{manual=$('#fa').value!=='';calc()};
 $('#fc').onchange=()=>{const c=customers.find(x=>x.id===$('#fc').value);if(c)$('#fr').value=c.rate;calc()};
 function openForm(e){
   if(!customers.length){toast('Pehle banda add karein');return}
@@ -329,13 +336,14 @@ function openForm(e){
     $('#fc').value=c.id; $('#fd').value=view==='daily'?day:ymd(new Date());
     $('#fs').value=''; $('#fe').value=''; $('#fr').value=c.rate;
   }
+  manual=!!(e&&e.amount!=null); $('#fa').value=manual?e.amount:'';
   calc(); $('#modal').hidden=false;
 }
 $('#fab').onclick=()=>openForm(null);
 $('#fX').onclick=()=>$('#modal').hidden=true;
 $('#fSave').onclick=()=>{
   const v=calc(); if(!v) return toast('Sab cheezein bharein');
-  const row={customer_id:$('#fc').value,start_at:v.a.toISOString(),end_at:v.b.toISOString(),rate:v.r};
+  const row={customer_id:$('#fc').value,start_at:v.a.toISOString(),end_at:v.b.toISOString(),rate:v.r,amount:manual?v.fin:null};
   if(view==='daily') day=$('#fd').value;
   $('#modal').hidden=true;
   mut('entries',editId?'upd':'ins',Object.assign({id:editId||uid()},row));
