@@ -138,8 +138,76 @@ nav{background:#13242aee}
 }
 
 </style>
+<style>
+#splash{position:fixed;inset:0;z-index:1000;background:linear-gradient(#bfe9f7 0%,#eaf8ef 70%,#f7fbe9 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s,transform .5s}
+#splash.out{opacity:0;transform:scale(1.05);pointer-events:none}
+#splash svg{width:min(92vw,420px);height:auto;overflow:visible}
+.sp-t{font:800 30px system-ui,sans-serif;color:#0a5f6e;margin-top:8px;animation:spUp .7s .5s both}
+.sp-s{font:600 14px system-ui,sans-serif;color:#3f6f78;margin-top:4px;animation:spUp .7s .8s both}
+.sp-bar{width:150px;height:6px;border-radius:4px;background:#0a5f6e22;margin-top:20px;overflow:hidden;animation:spUp .5s 1s both}
+.sp-bar i{display:block;height:100%;width:40%;border-radius:4px;background:#0a5f6e;animation:spLoad 1.1s ease-in-out infinite}
+@keyframes spUp{from{opacity:0;transform:translateY(14px)}}
+@keyframes spLoad{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.sp-spin{transform-box:fill-box;transform-origin:center;animation:spSpin 1s linear infinite}
+@keyframes spSpin{to{transform:rotate(360deg)}}
+.sp-cloud{animation:spCloud 7s ease-in-out infinite alternate}
+@keyframes spCloud{from{transform:translateX(-14px)}to{transform:translateX(16px)}}
+.sp-flow{stroke-dasharray:6 12;animation:spFlow .5s linear infinite}
+@keyframes spFlow{to{stroke-dashoffset:-18}}
+.sp-wave{animation:spWave 1.1s ease-in-out infinite alternate}
+@keyframes spWave{from{transform:translateX(-8px)}to{transform:translateX(8px)}}
+.sp-smoke{transform-box:fill-box;transform-origin:center;animation:spSmoke 1.8s ease-out infinite;opacity:0}
+@keyframes spSmoke{0%{transform:translate(0,0) scale(.4);opacity:.95}100%{transform:translate(12px,-36px) scale(1.5);opacity:0}}
+.sp-drop{animation:spDrop .7s ease-out infinite;opacity:0}
+@keyframes spDrop{0%{transform:translateY(0);opacity:.95}100%{transform:translateY(-18px);opacity:0}}
+.sp-sun{transform-box:fill-box;transform-origin:center;animation:spSun 1.8s ease-in-out infinite alternate}
+@keyframes spSun{to{transform:scale(1.12)}}
+.sp-shake{transform-box:fill-box;transform-origin:bottom;animation:spShake .25s linear infinite alternate}
+@keyframes spShake{from{transform:translateX(-.6px)}to{transform:translateX(.6px)}}
+
+</style>
 </head>
 <body>
+<div id="splash"><svg viewBox="0 0 360 260" aria-hidden="true">
+<defs><g id="spc"><g stroke="#12323a" stroke-width="3" fill="#fff"><ellipse cx="0" cy="8" rx="34" ry="13"/><ellipse cx="-12" cy="0" rx="14" ry="11"/><ellipse cx="12" cy="-2" rx="16" ry="13"/></g><g fill="#fff"><ellipse cx="0" cy="8" rx="33" ry="12"/><ellipse cx="-12" cy="0" rx="13" ry="10"/><ellipse cx="12" cy="-2" rx="15" ry="12"/></g></g></defs>
+<use href="#spc" class="sp-cloud" x="70" y="52"/>
+<use href="#spc" class="sp-cloud" x="235" y="92" style="animation-delay:-3.5s"/>
+<g stroke="#12323a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+<circle class="sp-sun" cx="312" cy="38" r="20" fill="#ffd95a"/>
+<ellipse cx="180" cy="238" rx="168" ry="20" fill="#5aa85a"/>
+<ellipse cx="180" cy="228" rx="168" ry="22" fill="#7cc472"/>
+<path d="M200 240q-6-12 0-16M200 240q6-12 0-16M104 244q-6-12 0-16M104 244q6-12 0-16M226 242q-6-12 0-16M226 242q6-12 0-16" fill="none" stroke="#2f7d32" stroke-width="2.5"/>
+<g class="sp-shake">
+<rect x="104" y="98" width="14" height="30" fill="#b8b0a6"/>
+<rect x="36" y="140" width="96" height="80" rx="3" fill="#f4cf94"/>
+<polygon points="26,144 84,98 142,144" fill="#d2553d"/>
+<path d="M60 220v-30a15 15 0 0 1 30 0v30z" fill="#9a6a45"/>
+<circle cx="110" cy="170" r="11" fill="#cfeefc"/>
+<path d="M99 170h22M110 159v22" stroke-width="2"/>
+</g>
+<circle class="sp-smoke" cx="111" cy="92" r="7" fill="#fff" stroke-width="2"/>
+<circle class="sp-smoke" cx="111" cy="92" r="7" fill="#fff" stroke-width="2" style="animation-delay:.6s"/>
+<circle class="sp-smoke" cx="111" cy="92" r="7" fill="#fff" stroke-width="2" style="animation-delay:1.2s"/>
+<rect x="172" y="194" width="10" height="8" fill="#6f858d"/>
+<circle cx="150" cy="198" r="22" fill="#6b8791"/>
+<g class="sp-spin"><path d="M150 180v36M132 198h36M138 186l24 24M162 186l-24 24" stroke-width="4"/><circle cx="150" cy="198" r="7" fill="#ffd95a"/></g>
+<rect x="178" y="114" width="14" height="106" fill="#93a8b0"/>
+<rect x="178" y="108" width="62" height="14" fill="#93a8b0"/>
+<rect x="236" y="104" width="8" height="22" rx="2" fill="#6f858d"/>
+<rect x="250" y="168" width="92" height="54" fill="#c7ced4"/>
+<rect x="246" y="162" width="100" height="10" rx="3" fill="#aab3ba"/>
+<rect x="254" y="173" width="84" height="14" fill="#3aa7e0" stroke="none"/>
+<g class="sp-wave"><path d="M254 178q10-6 20 0t20 0t20 0t20 0" fill="none" stroke="#fff" stroke-width="2" opacity=".85"/></g>
+<circle cx="282" cy="203" r="4" fill="#12323a" stroke="none"/><circle cx="310" cy="203" r="4" fill="#12323a" stroke="none"/>
+<path d="M285 211q11 9 22 0" fill="none"/>
+<path d="M244 116Q282 112 290 176" fill="none" stroke="#3aa7e0" stroke-width="9"/>
+<path class="sp-flow" d="M244 116Q282 112 290 176" fill="none" stroke="#fff" stroke-width="3" opacity=".85"/>
+<circle class="sp-drop" cx="278" cy="172" r="3" fill="#7cc7ee" stroke="none" style="animation-delay:.1s"/>
+<circle class="sp-drop" cx="302" cy="172" r="3" fill="#7cc7ee" stroke="none" style="animation-delay:.3s"/>
+<circle class="sp-drop" cx="290" cy="170" r="3" fill="#7cc7ee" stroke="none" style="animation-delay:.5s"/>
+</g></svg>
+<div class="sp-t">Tubewell Khata</div><div class="sp-s">Pani ka hisaab, ab aasaan</div><div class="sp-bar"><i></i></div></div>
+
 <div id="auth" hidden><div class="card">
 <div class="logo">💧</div>
 <h2 style="margin:0 0 2px;color:var(--p)">Tubewell Khata</h2>
@@ -438,11 +506,121 @@ window.addEventListener('online',()=>{setStat();loadAll()});
 window.addEventListener('offline',setStat);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#app').hidden)loadAll()});
 setInterval(()=>{if(Q.length)flush()},15000);
+document.head.insertAdjacentHTML('beforeend','<style>#main{touch-action:pan-y}</style>');
+const gname=()=>{const n=localStorage.getItem('tk_name');return n?', '+esc(n):''};
+sb.auth.onAuthStateChange((ev,sess)=>{
+  if(sess&&sess.user){
+    localStorage.setItem('tk_name',(sess.user.user_metadata||{}).name||'');
+    localStorage.setItem('tk_login',(sess.user.email||'').split('@')[0]);
+  }else if(ev==='SIGNED_OUT'){localStorage.removeItem('tk_name');localStorage.removeItem('tk_login')}
+});
+
+/* ---- Setting ---- */
+function rSettings(){
+  const nm=localStorage.getItem('tk_name')||'', lg=localStorage.getItem('tk_login')||'', show=nm||lg||'Account';
+  $('#main').innerHTML=`<div class="hero"><div class="hhead"><span class="av" style="background:${col(show)}">${esc((show.trim()[0]||'?').toUpperCase())}</span><div><b>${esc(show)}</b><small>Login: ${esc(lg)}</small></div></div></div>
+  <div class="card"><b>Apna naam</b><div class="mu">Ye naam app mein salam ke saath dikhega.</div>
+  <label>Naam</label><input id="sN" value="${esc(nm)}" maxlength="30"><button class="btn" id="sNs">Naam save karein</button></div>
+  <div class="card"><b>Password badlein</b>
+  <label>Maujooda password</label><input id="sP0" type="password" autocomplete="current-password">
+  <label>Naya password (kam az kam 6 harf)</label><input id="sP1" type="password" autocomplete="new-password">
+  <label>Naya password dobara</label><input id="sP2" type="password" autocomplete="new-password">
+  <button class="btn" id="sPs">Password badlein</button></div>`;
+  $('#sNs').onclick=async()=>{
+    const n=$('#sN').value.trim();
+    if(!navigator.onLine) return toast('Internet chahiye');
+    const {error}=await sb.auth.updateUser({data:{name:n}});
+    if(error) return toast(error.message);
+    localStorage.setItem('tk_name',n); toast('Naam badal gaya'); render();
+  };
+  $('#sPs').onclick=async()=>{
+    const old=$('#sP0').value, n1=$('#sP1').value, n2=$('#sP2').value;
+    if(n1.length<6) return toast('Naya password kam az kam 6 harf');
+    if(n1!==n2) return toast('Dono naye password barabar nahi');
+    if(!navigator.onLine) return toast('Internet chahiye');
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session) return toast('Dobara login karein');
+    const r=await sb.auth.signInWithPassword({email:session.user.email,password:old});
+    if(r.error) return toast('Maujooda password ghalat hai');
+    const {error}=await sb.auth.updateUser({password:n1});
+    if(error) return toast(error.message);
+    ['#sP0','#sP1','#sP2'].forEach(i=>$(i).value=''); toast('Password badal gaya');
+  };
+}
+document.querySelector('nav').insertAdjacentHTML('beforeend','<button data-v="settings"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-7 8-7s8 3 8 7"/></svg>Setting</button>');
+document.querySelector('nav button[data-v="settings"]').onclick=()=>go('settings');
+
+let lastView=view;
+const _r4=render;
+render=function(){
+  const changed=lastView!==view, fwd=view!=='khata'; lastView=view;
+  if(view==='settings'){
+    setStat(); $('#back').hidden=true; $('#ttl').textContent='Setting'; $('#fab').hidden=true;
+    document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==='settings'));
+    rSettings();
+  }else{_r4(); $('#fab').hidden=false}
+  if(changed&&$('#main').animate) $('#main').animate([{transform:'translateX('+(fwd?30:-30)+'px)',opacity:0},{transform:'none',opacity:1}],{duration:240,easing:'cubic-bezier(.2,.8,.2,1)'});
+};
+
+/* ---- back: button aur slide ---- */
+function goBack(){
+  const open=[...document.querySelectorAll('.modal')].find(m=>!m.hidden);
+  if(open){open.hidden=true;return true}
+  if(view!=='khata'&&!$('#app').hidden){go('khata');return true}
+  return false;
+}
+const AppP=window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.App;
+if(AppP) AppP.addListener('backButton',()=>{
+  if(goBack()) return;
+  try{AppP.minimizeApp()}catch(e){try{AppP.exitApp()}catch(e2){}}
+});
+(function(){
+  let sx=0,sy=0,dx=0,on=false,lock=false;
+  const el=()=>$('#main');
+  const reset=()=>{const m=el();m.style.transition='';m.style.transform='';m.style.opacity=''};
+  document.addEventListener('touchstart',e=>{
+    const anyModal=[...document.querySelectorAll('.modal')].some(m=>!m.hidden);
+    if($('#app').hidden||view==='khata'||anyModal||e.touches.length!==1||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){on=false;return}
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY; dx=0; on=true; lock=false;
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!on) return;
+    const t=e.touches[0], x=t.clientX-sx, y=t.clientY-sy;
+    if(!lock){
+      if(Math.abs(y)>Math.abs(x)&&Math.abs(y)>12){on=false;return}
+      if(x>14&&x>Math.abs(y)*1.4) lock=true; else return;
+    }
+    dx=Math.max(0,x); const m=el();
+    m.style.transition='none'; m.style.transform='translateX('+(dx*0.92)+'px)';
+    m.style.opacity=String(1-Math.min(.55,dx/(innerWidth*1.1)));
+  },{passive:true});
+  const end=()=>{
+    if(!on||!lock){on=false;return}
+    on=false; lock=false; const m=el();
+    if(dx>innerWidth*0.28){
+      m.style.transition='transform .2s ease-out,opacity .2s'; m.style.transform='translateX(105%)'; m.style.opacity='0';
+      setTimeout(()=>{reset();goBack()},190);
+    }else{
+      m.style.transition='transform .24s cubic-bezier(.2,.8,.2,1),opacity .24s'; m.style.transform='translateX(0)'; m.style.opacity='1';
+      setTimeout(reset,250);
+    }
+  };
+  document.addEventListener('touchend',end,{passive:true});
+  document.addEventListener('touchcancel',end,{passive:true});
+})();
+
+/* ---- opening animation ---- */
+(function(){
+  const s=document.getElementById('splash'); if(!s) return;
+  const hide=()=>{if(!s.isConnected)return;s.classList.add('out');setTimeout(()=>s.remove(),600)};
+  s.onclick=hide; setTimeout(hide,3000);
+})();
+
 function decorate(){
   const m=$('#main'); if(!m) return;
   if(view==='khata'&&!m.querySelector('.greet')){
     const d=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-    m.insertAdjacentHTML('afterbegin',`<div class="greet">Assalam o Alaikum 👋<small>${d}</small></div>`);
+    m.insertAdjacentHTML('afterbegin',`<div class="greet">Assalam o Alaikum${gname()} 👋<small>${d}</small></div>`);
   }
   const h=m.querySelector('.hero'); if(!h||h.querySelector('.bar')) return;
   let tot=0,jm=0;
