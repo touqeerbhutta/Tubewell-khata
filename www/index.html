@@ -166,6 +166,29 @@ nav{background:#13242aee}
 @keyframes spShake{from{transform:translateX(-.6px)}to{transform:translateX(.6px)}}
 
 </style>
+<style>
+main>*{animation:none!important}
+main.enter>*{animation:rise2 .45s cubic-bezier(.22,1,.36,1) both!important}
+main.enter>*:nth-child(2){animation-delay:.05s!important}
+main.enter>*:nth-child(3){animation-delay:.1s!important}
+main.enter>*:nth-child(4){animation-delay:.15s!important}
+main.enter>*:nth-child(n+5){animation-delay:.2s!important}
+@keyframes rise2{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.modal,.modal[hidden]{display:flex!important}
+.modal{animation:none;opacity:1;visibility:visible;transition:opacity .28s ease,visibility 0s}
+.modal[hidden]{opacity:0;visibility:hidden;pointer-events:none;transition:opacity .28s ease,visibility 0s .28s}
+.sheet{animation:none;transition:transform .38s cubic-bezier(.22,1,.36,1);will-change:transform}
+.modal[hidden] .sheet{transform:translateY(105%)}
+.bar i{transition:width 1s cubic-bezier(.22,1,.36,1)}
+.card,.chips button,nav button,.btn,.lnk{transition:transform .18s cubic-bezier(.22,1,.36,1),background-color .25s,color .25s,box-shadow .25s}
+.ttlw{flex:1;min-width:0;padding-left:4px}
+.ttlw h1{padding-left:0}
+#sub{font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;opacity:.78;max-height:16px;overflow:hidden;transition:opacity .3s,max-height .3s}
+#sub.off{opacity:0;max-height:0}
+.sp-m{font:700 11px system-ui,sans-serif;letter-spacing:2px;text-transform:uppercase;color:#4f8791;margin-top:3px;animation:spUp .7s .65s both}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+</style>
 </head>
 <body>
 <div id="splash"><svg viewBox="0 0 360 260" aria-hidden="true">
@@ -206,7 +229,7 @@ nav{background:#13242aee}
 <circle class="sp-drop" cx="302" cy="172" r="3" fill="#7cc7ee" stroke="none" style="animation-delay:.3s"/>
 <circle class="sp-drop" cx="290" cy="170" r="3" fill="#7cc7ee" stroke="none" style="animation-delay:.5s"/>
 </g></svg>
-<div class="sp-t">Tubewell Khata</div><div class="sp-s">Pani ka hisaab, ab aasaan</div><div class="sp-bar"><i></i></div></div>
+<div class="sp-t">Tubewell Khata</div><div class="sp-m">Made by Touqeer</div><div class="sp-s">Pani ka hisaab, ab aasaan</div><div class="sp-bar"><i></i></div></div>
 
 <div id="auth" hidden><div class="card">
 <div class="logo">💧</div>
@@ -219,7 +242,7 @@ nav{background:#13242aee}
 </div></div>
 
 <div id="app" hidden>
-<header><button id="back" hidden>‹</button><h1 id="ttl">Tubewell Khata</h1><span id="stat" class="stat"></span><button id="bOut">Logout</button></header>
+<header><button id="back" hidden>‹</button><div class="ttlw"><h1 id="ttl">Tubewell Khata</h1><div id="sub">Made by Touqeer</div></div><span id="stat" class="stat"></span><button id="bOut">Logout</button></header>
 <main id="main"></main>
 <button class="fab" id="fab">+ Nayi entry</button>
 <nav>
@@ -511,7 +534,7 @@ const gname=()=>{const n=localStorage.getItem('tk_name');return n?', '+esc(n):''
 sb.auth.onAuthStateChange((ev,sess)=>{
   if(sess&&sess.user){
     localStorage.setItem('tk_name',(sess.user.user_metadata||{}).name||'');
-    localStorage.setItem('tk_login',(sess.user.email||'').split('@')[0]);
+    if(!localStorage.getItem('tk_login')) localStorage.setItem('tk_login',(sess.user.email||'').split('@')[0]);
   }else if(ev==='SIGNED_OUT'){localStorage.removeItem('tk_name');localStorage.removeItem('tk_login')}
 });
 
@@ -559,7 +582,7 @@ render=function(){
     document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v==='settings'));
     rSettings();
   }else{_r4(); $('#fab').hidden=false}
-  if(changed&&$('#main').animate) $('#main').animate([{transform:'translateX('+(fwd?30:-30)+'px)',opacity:0},{transform:'none',opacity:1}],{duration:240,easing:'cubic-bezier(.2,.8,.2,1)'});
+  if(changed&&$('#main').animate) $('#main').animate([{transform:'translateX('+(fwd?30:-30)+'px)',opacity:0},{transform:'none',opacity:1}],{duration:340,easing:'cubic-bezier(.22,1,.36,1)'});
 };
 
 /* ---- back: button aur slide ---- */
@@ -903,6 +926,93 @@ $('#pSave').onclick=()=>{
 $('#pDel').onclick=()=>{
   if(!confirm('Ye jama entry delete karein?')) return;
   $('#pm').hidden=true; mut('payments','del',{id:payEdit});
+};
+
+/* ---- username (profiles table) ---- */
+async function ensureProfile(){
+  if(!navigator.onLine) return;
+  try{
+    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
+    const r=await sb.from('profiles').select('username').maybeSingle();
+    if(r.error) return;
+    if(r.data){localStorage.setItem('tk_login',r.data.username);return}
+    const un=(session.user.email||'').split('@')[0];
+    await sb.from('profiles').insert({username:un,email:session.user.email});
+    localStorage.setItem('tk_login',un);
+  }catch(e){}
+}
+sb.auth.onAuthStateChange((ev,s)=>{if(s&&s.user&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION')) setTimeout(ensureProfile,500)});
+
+async function doAuth(signup){
+  const u=$('#u').value.trim().toLowerCase().replace(/\s+/g,''), pw=$('#pw').value;
+  if(!u||pw.length<6) return toast('Username likhein, password kam az kam 6 harf');
+  let email=mail(u);
+  try{
+    const r=await sb.rpc('login_email',{u});
+    if(signup&&r.data) return toast('Ye username pehle se maujood hai');
+    if(!signup&&r.data) email=r.data;
+  }catch(e){}
+  const fn=signup?sb.auth.signUp.bind(sb.auth):sb.auth.signInWithPassword.bind(sb.auth);
+  const {error}=await fn({email,password:pw});
+  if(error) return toast(error.message);
+  boot();
+}
+
+const _rs=rSettings;
+rSettings=function(){
+  _rs();
+  const lg=localStorage.getItem('tk_login')||'';
+  $('#sNs').closest('.card').insertAdjacentHTML('afterend',`<div class="card"><b>Login username badlein</b>
+  <div class="mu">Abhi: <b>${esc(lg)}</b>. Naye username se login hoga.</div>
+  <label>Naya username</label><input id="sU" autocapitalize="none" autocomplete="off" maxlength="30">
+  <label>Password (tasdeeq ke liye)</label><input id="sUp" type="password" autocomplete="current-password">
+  <button class="btn" id="sUs">Username badlein</button></div>`);
+  $('#sUs').onclick=async()=>{
+    const nu=$('#sU').value.trim().toLowerCase().replace(/\s+/g,''), pw=$('#sUp').value;
+    if(!/^[a-z0-9._]{3,30}$/.test(nu)) return toast('Username 3 se 30 harf: a-z, 0-9, . aur _');
+    if(nu===lg) return toast('Ye pehle se wahi username hai');
+    if(!navigator.onLine) return toast('Internet chahiye');
+    const {data:{session}}=await sb.auth.getSession();
+    if(!session) return toast('Dobara login karein');
+    const r=await sb.auth.signInWithPassword({email:session.user.email,password:pw});
+    if(r.error) return toast('Password ghalat hai');
+    const ex=await sb.rpc('login_email',{u:nu});
+    if(ex.data) return toast('Ye username pehle se maujood hai');
+    const cur=await sb.from('profiles').select('user_id').maybeSingle();
+    const q=cur.data?sb.from('profiles').update({username:nu}).eq('user_id',session.user.id):sb.from('profiles').insert({username:nu,email:session.user.email});
+    const {error}=await q;
+    if(error) return toast(/duplicate|unique/i.test(error.message)?'Ye username pehle se maujood hai':error.message);
+    localStorage.setItem('tk_login',nu); toast('Username badal gaya. Ab '+nu+' se login karein'); render();
+  };
+};
+
+/* ---- smooth progress bar ---- */
+const _barSeen={};
+function decorate(){
+  const m=$('#main'); if(!m) return;
+  if(view==='khata'&&!m.querySelector('.greet')){
+    const d=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
+    m.insertAdjacentHTML('afterbegin',`<div class="greet">Assalam o Alaikum${gname()} 👋<small>${d}</small></div>`);
+  }
+  const h=m.querySelector('.hero'); if(!h||h.querySelector('.bar')) return;
+  let tot=0,jm=0,key=view;
+  if(view==='khata') customers.forEach(c=>{tot+=cs(c).m;jm+=ps(c).jama});
+  else if(view==='detail'&&flt==='all'){const c=customers.find(x=>x.id===cid);if(!c)return;tot=cs(c).m;jm=ps(c).jama;key+=cid}
+  else return;
+  if(tot<=0) return;
+  const p=Math.max(0,Math.min(100,Math.round(jm/tot*100))), fresh=_barSeen[key]!==p;
+  _barSeen[key]=p;
+  h.insertAdjacentHTML('beforeend',`<div class="bar"><i style="width:${fresh?0:p}%"></i></div><div class="bl">${p}% wasool ho chuka</div>`);
+  if(fresh) requestAnimationFrame(()=>requestAnimationFrame(()=>{const i=h.querySelector('.bar i');if(i)i.style.width=p+'%'}));
+}
+
+/* ---- header subtitle aur pehli baar ki animation ---- */
+let lv5=null;
+const _r5=render;
+render=function(){
+  const first=lv5===null; lv5=view; _r5();
+  const sub=$('#sub'); if(sub) sub.classList.toggle('off',view==='detail');
+  if(first){const m=$('#main');m.classList.add('enter');setTimeout(()=>m.classList.remove('enter'),900)}
 };
 
 boot();
