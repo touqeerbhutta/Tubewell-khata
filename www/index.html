@@ -4,7 +4,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0b5d6b">
 <title>Tubewell Khata</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="supabase.js"></script>
 <style>
 :root{--p:#0b5d6b;--soft:#e6f2f4;--bg:#f2f5f7;--ink:#122428;--mu:#6b7c80;--ln:#e1e8ea;--red:#c0392b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -20,13 +20,15 @@ header{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#0b5d6b
 header h1{font-size:18px;margin:0;flex:1;padding-left:4px}
 header button{background:none;border:0;color:#fff;font-weight:600;opacity:.9;padding:6px 8px}
 #back{font-size:30px;line-height:1;padding:0 8px}
+.stat{font-size:11px;font-weight:700;border-radius:10px;padding:3px 8px;background:#ffffff2e}
+.stat.off{background:#c0392b}.stat.wait{background:#c26a1b}
 main{padding:14px 14px 170px}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom);z-index:5}
 nav button{flex:1;padding:9px;border:0;background:none;color:var(--mu);font-weight:600;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:3px}
 nav button.on{color:var(--p)}
 .fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));background:var(--p);color:#fff;border:0;border-radius:30px;padding:15px 22px;font-weight:700;box-shadow:0 6px 18px #0b5d6b66;z-index:6}
 .hero{background:linear-gradient(135deg,#0b5d6b,#0e7490);color:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 8px 22px #0b5d6b33}
-.hero small{opacity:.8;display:block;font-size:12px}
+.hero small{opacity:.85;display:block;font-size:12px}
 .big{font-size:34px;font-weight:800;margin:4px 0 6px}
 .hrow{display:flex;justify-content:space-between;opacity:.9;font-size:13px}
 .hhead{display:flex;gap:12px;align-items:center;margin-bottom:14px}
@@ -73,7 +75,7 @@ nav button.on{color:var(--p)}
 </div></div>
 
 <div id="app" hidden>
-<header><button id="back" hidden>‹</button><h1 id="ttl">Tubewell Khata</h1><button id="bOut">Logout</button></header>
+<header><button id="back" hidden>‹</button><h1 id="ttl">Tubewell Khata</h1><span id="stat" class="stat"></span><button id="bOut">Logout</button></header>
 <main id="main"></main>
 <button class="fab" id="fab">+ Nayi entry</button>
 <nav>
@@ -97,6 +99,7 @@ nav button.on{color:var(--p)}
 <h3 id="cmT">Naya banda</h3>
 <label>Naam</label><input id="cmN">
 <label>Rate (Rs per ghanta)</label><input id="cmR" type="number" inputmode="decimal">
+<label>Pehle ka hisaab (Rs, purani book se)</label><input id="cmO" type="number" inputmode="decimal" placeholder="0">
 <button class="btn" id="cmS">Save karein</button>
 <button class="btn s" id="cmX">Band karein</button>
 </div></div>
@@ -119,12 +122,21 @@ const sum=l=>l.reduce((a,e)=>{a.ms+=ms(e);a.m+=amt(e);return a},{ms:0,m:0});
 const COL=['#0b5d6b','#2e7d32','#6a4c93','#c26a1b','#1565c0','#ad1457'];
 const col=n=>COL[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%COL.length];
 const av=n=>`<span class="av" style="background:${col(n)}">${esc((n.trim()[0]||'?').toUpperCase())}</span>`;
+const byName=(a,b)=>a.name.localeCompare(b.name);
 const cn=id=>(customers.find(c=>c.id===id)||{}).name||'';
-let customers=[],entries=[],view='khata',cid=null,flt='all',day=ymd(new Date()),editId=null,custEdit=null;
+const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
+const LS='tk_data';
+let customers=[],entries=[],Q=[],view='khata',cid=null,flt='all',day=ymd(new Date()),editId=null,custEdit=null,flushing=false,ch=null;
+const cs=c=>{const s=sum(entries.filter(e=>e.customer_id===c.id)),o=+c.opening||0;return{ms:s.ms,n:s.m,o,m:s.m+o}};
 
 function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;setTimeout(()=>e.hidden=true,2600)}
-const mail=u=>u.trim().toLowerCase().replace(/\s+/g,'')+'@tubewell.app';
+function setStat(){const s=$('#stat'),off=!navigator.onLine;s.textContent=(off?'Offline':'Online')+(Q.length?' · '+Q.length+' baqi':'');s.className='stat '+(off?'off':Q.length?'wait':'on')}
+function saveLocal(){try{localStorage.setItem(LS,JSON.stringify({customers,entries,Q}))}catch(e){}}
+function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LS)||'null');if(d){customers=d.customers||[];entries=d.entries||[];Q=d.Q||[]}}catch(e){}}
+const isNet=er=>!navigator.onLine||/fetch|network/i.test((er&&er.message)||'');
 
+/* ---- login ---- */
+const mail=u=>u.trim().toLowerCase().replace(/\s+/g,'')+'@tubewell.app';
 async function doAuth(signup){
   const u=$('#u').value, pw=$('#pw').value;
   if(!u.trim()||pw.length<6) return toast('Username likhein, password kam az kam 6 harf');
@@ -135,29 +147,81 @@ async function doAuth(signup){
 }
 $('#bLogin').onclick=()=>doAuth(false);
 $('#bSign').onclick=()=>doAuth(true);
-$('#bOut').onclick=async()=>{await sb.auth.signOut();boot()};
-
+$('#bOut').onclick=async()=>{
+  if(Q.length&&!confirm(Q.length+' tabdeeliyan abhi sync nahi hui, logout se zaya ho jayengi. Pakka?')) return;
+  try{await sb.auth.signOut()}catch(e){}
+  if(ch){sb.removeChannel(ch);ch=null}
+  localStorage.removeItem('tk_uid');localStorage.removeItem(LS);
+  customers=[];entries=[];Q=[];boot();
+};
 async function boot(){
-  const {data:{session}}=await sb.auth.getSession();
-  $('#auth').hidden=!!session; $('#app').hidden=!session;
-  if(!session) return;
-  view='khata'; day=ymd(new Date());
-  await loadAll();
+  const {data:{session},error}=await sb.auth.getSession();
+  const off=!session&&localStorage.getItem('tk_uid')&&(!navigator.onLine||(error&&/fetch|network/i.test(error.message||'')));
+  const ok=!!session||!!off;
+  $('#auth').hidden=ok; $('#app').hidden=!ok;
+  if(!ok) return;
+  if(session){
+    const old=localStorage.getItem('tk_uid');
+    if(old&&old!==session.user.id) localStorage.removeItem(LS);
+    localStorage.setItem('tk_uid',session.user.id);
+  }
+  loadLocal(); view='khata'; day=ymd(new Date()); render();
+  if(session){listen(); await loadAll()}
+}
+
+/* ---- sync ---- */
+async function flush(){
+  if(flushing||!Q.length) return; flushing=true;
+  try{
+    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
+    while(Q.length){
+      const {t,op,row}=Q[0]; let r;
+      if(op==='ins') r=await sb.from(t).upsert(row);
+      else if(op==='upd'){const {id,...rest}=row; r=await sb.from(t).update(rest).eq('id',id)}
+      else r=await sb.from(t).delete().eq('id',row.id);
+      if(r.error){ if(isNet(r.error)) break; toast('Sync masla: '+r.error.message) }
+      Q.shift(); saveLocal(); setStat();
+    }
+  }catch(e){}finally{flushing=false;setStat()}
 }
 async function loadAll(){
+  await flush();
+  if(Q.length) return render();
   const c=await sb.from('customers').select('*').order('name');
-  if(c.error) return toast(c.error.message);
-  customers=c.data;
+  if(c.error) return render();
   let all=[],from=0;
   while(true){
     const r=await sb.from('entries').select('*').order('start_at',{ascending:false}).range(from,from+999);
-    if(r.error){toast(r.error.message);break}
+    if(r.error) return render();
     all=all.concat(r.data); if(r.data.length<1000) break; from+=1000;
   }
-  entries=all; render();
+  customers=c.data; entries=all; saveLocal(); render();
+}
+function mut(t,op,row){
+  const arr=t==='customers'?customers:entries, i=arr.findIndex(x=>x.id===row.id);
+  if(op==='del'){if(i>-1)arr.splice(i,1);if(t==='customers')entries=entries.filter(e=>e.customer_id!==row.id)}
+  else if(i>-1) Object.assign(arr[i],row); else arr.push(Object.assign({},row));
+  if(t==='customers') customers.sort(byName);
+  Q.push({t,op,row}); saveLocal(); render(); flush();
+}
+function listen(){
+  if(ch) return;
+  ch=sb.channel('tk');
+  ['customers','entries'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},p=>{
+    const arr=t==='customers'?customers:entries, row=(p.new&&p.new.id)?p.new:p.old;
+    if(!row||!row.id) return;
+    const i=arr.findIndex(x=>x.id===row.id);
+    if(p.eventType==='DELETE'){if(i>-1)arr.splice(i,1);if(t==='customers')entries=entries.filter(e=>e.customer_id!==row.id)}
+    else if(i>-1) arr[i]=p.new; else arr.push(p.new);
+    if(t==='customers') customers.sort(byName);
+    saveLocal(); render();
+  }));
+  ch.subscribe();
 }
 
+/* ---- screens ---- */
 function render(){
+  setStat();
   $('#back').hidden=view!=='detail';
   $('#ttl').textContent=view==='detail'?cn(cid):'Tubewell Khata';
   document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===(view==='detail'?'khata':view)));
@@ -167,11 +231,11 @@ const go=v=>{view=v;render();scrollTo(0,0)};
 const bindE=()=>document.querySelectorAll('[data-e]').forEach(el=>el.onclick=()=>openForm(entries.find(x=>x.id===el.dataset.e)));
 
 function rKhata(){
-  const t=sum(entries);
-  let h=`<div class="hero"><small>Kul hisaab (sab bande)</small><div class="big">${rs(t.m)}</div><div class="hrow"><span>${dur(t.ms)}</span><span>${customers.length} bande</span></div></div>
+  const t=sum(entries), tot=t.m+customers.reduce((a,c)=>a+(+c.opening||0),0);
+  let h=`<div class="hero"><small>Kul hisaab (sab bande)</small><div class="big">${rs(tot)}</div><div class="hrow"><span>${dur(t.ms)}</span><span>${customers.length} bande</span></div></div>
   <div class="sec"><h2>Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
-  h+=customers.length?customers.map(c=>{const s=sum(entries.filter(e=>e.customer_id===c.id));
-    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><div class="mu">${dur(s.ms)} &middot; Rs ${c.rate}/ghanta</div></div><div class="end"><b>${rs(s.m)}</b><span class="chev">›</span></div></div>`}).join('')
+  h+=customers.length?customers.map(c=>{const k=cs(c);
+    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><div class="mu">${dur(k.ms)} &middot; Rs ${c.rate}/ghanta</div></div><div class="end"><b>${rs(k.m)}</b><span class="chev">›</span></div></div>`}).join('')
     :'<div class="empty">Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.</div>';
   $('#main').innerHTML=h;
   $('#addC').onclick=()=>openCust(null);
@@ -187,26 +251,27 @@ function inFlt(e){
 function rDetail(){
   const c=customers.find(x=>x.id===cid);
   if(!c){view='khata';return render()}
-  const list=entries.filter(e=>e.customer_id===cid&&inFlt(e)), s=sum(list), groups={};
-  list.forEach(e=>{const k=ymd(new Date(e.start_at));(groups[k]=groups[k]||[]).push(e)});
+  const k=cs(c), list=entries.filter(e=>e.customer_id===cid&&inFlt(e)), s=sum(list), groups={}, all=flt==='all';
+  list.forEach(e=>{const d=ymd(new Date(e.start_at));(groups[d]=groups[d]||[]).push(e)});
   let h=`<div class="hero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rs ${c.rate} per ghanta</small></div></div>
-  <div class="two"><div><small>Total pani</small><b>${dur(s.ms)}</b></div><div><small>Total paise</small><b>${rs(s.m)}</b></div></div></div>
-  <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([k,l])=>`<button class="${flt===k?'on':''}" data-f="${k}">${l}</button>`).join('')}</div>`;
+  <div class="two"><div><small>Total pani</small><b>${dur(s.ms)}</b></div><div><small>Total paise</small><b>${rs(all?k.m:s.m)}</b></div></div>
+  ${all&&k.o>0?`<small style="margin-top:10px">Pehle ka ${rs(k.o)} + naya ${rs(k.n)}</small>`:''}</div>
+  <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>`;
   const keys=Object.keys(groups).sort().reverse();
-  h+=keys.length?keys.map(k=>{
-    const g=groups[k].slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), gs=sum(g);
-    return `<div class="day"><span>${fd(k)}</span><span>${dur(gs.ms)} &middot; ${rs(gs.m)}</span></div>`+
+  h+=keys.length?keys.map(d=>{
+    const g=groups[d].slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), gs=sum(g);
+    return `<div class="day"><span>${fd(d)}</span><span>${dur(gs.ms)} &middot; ${rs(gs.m)}</span></div>`+
     g.map(e=>`<div class="card row" data-e="${e.id}"><div class="grow"><b>${tm(e.start_at)} se ${tm(e.end_at)}</b><div class="mu">${dur(ms(e))} &middot; Rs ${e.rate}/ghanta</div></div><b>${rs(amt(e))}</b></div>`).join('');
   }).join(''):'<div class="empty">Is muddat mein koi entry nahi.</div>';
-  h+=`<div class="two2"><button class="btn s" id="eC">Naam / rate badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
+  if(all&&k.o>0) h+=`<div class="day"><span>PURANA HISAAB</span><span></span></div><div class="card row" id="opn"><div class="grow"><b>Pehle ka hisaab</b><div class="mu">Purani book se (tap karke badlein)</div></div><b>${rs(k.o)}</b></div>`;
+  h+=`<div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
   $('#eC').onclick=()=>openCust(c);
-  $('#dC').onclick=async()=>{
+  if($('#opn')) $('#opn').onclick=()=>openCust(c);
+  $('#dC').onclick=()=>{
     if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?')) return;
-    const {error}=await sb.from('customers').delete().eq('id',cid);
-    if(error) return toast(error.message);
-    view='khata'; await loadAll();
+    view='khata'; mut('customers','del',{id:c.id});
   };
   bindE();
 }
@@ -218,26 +283,26 @@ function rDaily(){
   $('#day').onchange=ev=>{day=ev.target.value||ymd(new Date());rDaily()};
   bindE();
 }
-
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
 $('#back').onclick=()=>go('khata');
 
+/* ---- banda form ---- */
 function openCust(c){
   custEdit=c?c.id:null;
-  $('#cmT').textContent=c?'Naam / rate badlein':'Naya banda';
-  $('#cmN').value=c?c.name:''; $('#cmR').value=c?c.rate:'';
+  $('#cmT').textContent=c?'Banda theek karein':'Naya banda';
+  $('#cmN').value=c?c.name:''; $('#cmR').value=c?c.rate:''; $('#cmO').value=c&&c.opening?c.opening:'';
   $('#cm').hidden=false;
 }
 $('#cmX').onclick=()=>$('#cm').hidden=true;
-$('#cmS').onclick=async()=>{
-  const name=$('#cmN').value.trim(), rate=parseFloat($('#cmR').value);
+$('#cmS').onclick=()=>{
+  const name=$('#cmN').value.trim(), rate=parseFloat($('#cmR').value), opening=parseFloat($('#cmO').value)||0;
   if(!name||isNaN(rate)) return toast('Naam aur rate likhein');
-  const q=custEdit?sb.from('customers').update({name,rate}).eq('id',custEdit):sb.from('customers').insert({name,rate});
-  const {error}=await q; if(error) return toast(error.message);
-  $('#cm').hidden=true; await loadAll();
-  toast(custEdit?'Badal gaya (purani entries ka rate nahi badla)':'Banda add ho gaya');
+  $('#cm').hidden=true;
+  if(custEdit){mut('customers','upd',{id:custEdit,name,rate,opening});toast('Badal gaya (purani entries ka rate nahi badla)')}
+  else{mut('customers','ins',{id:uid(),name,rate,opening});toast('Banda add ho gaya')}
 };
 
+/* ---- entry form ---- */
 function calc(){
   const d=$('#fd').value,s=$('#fs').value,e=$('#fe').value,r=parseFloat($('#fr').value);
   if(!d||!s||!e||isNaN(r)){$('#prev').textContent='-';return null}
@@ -248,7 +313,6 @@ function calc(){
 }
 ['fd','fs','fe','fr'].forEach(i=>$('#'+i).oninput=calc);
 $('#fc').onchange=()=>{const c=customers.find(x=>x.id===$('#fc').value);if(c)$('#fr').value=c.rate;calc()};
-
 function openForm(e){
   if(!customers.length){toast('Pehle banda add karein');return}
   editId=e?e.id:null;
@@ -269,20 +333,23 @@ function openForm(e){
 }
 $('#fab').onclick=()=>openForm(null);
 $('#fX').onclick=()=>$('#modal').hidden=true;
-$('#fSave').onclick=async()=>{
+$('#fSave').onclick=()=>{
   const v=calc(); if(!v) return toast('Sab cheezein bharein');
   const row={customer_id:$('#fc').value,start_at:v.a.toISOString(),end_at:v.b.toISOString(),rate:v.r};
-  const q=editId?sb.from('entries').update(row).eq('id',editId):sb.from('entries').insert(row);
-  const {error}=await q; if(error) return toast(error.message);
   if(view==='daily') day=$('#fd').value;
-  $('#modal').hidden=true; await loadAll(); toast('Save ho gaya');
+  $('#modal').hidden=true;
+  mut('entries',editId?'upd':'ins',Object.assign({id:editId||uid()},row));
+  toast('Save ho gaya');
 };
-$('#fDel').onclick=async()=>{
+$('#fDel').onclick=()=>{
   if(!confirm('Ye entry delete karein?')) return;
-  const {error}=await sb.from('entries').delete().eq('id',editId);
-  if(error) return toast(error.message);
-  $('#modal').hidden=true; await loadAll();
+  $('#modal').hidden=true; mut('entries','del',{id:editId});
 };
+
+window.addEventListener('online',()=>{setStat();loadAll()});
+window.addEventListener('offline',setStat);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#app').hidden)loadAll()});
+setInterval(()=>{if(Q.length)flush()},15000);
 boot();
 </script>
 </body></html>
