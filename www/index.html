@@ -306,19 +306,20 @@ $('#cmS').onclick=()=>{
 };
 
 /* ---- entry form ---- */
-function calc(){
+function calc(keep){
   const d=$('#fd').value,s=$('#fs').value,e=$('#fe').value,r=parseFloat($('#fr').value);
   if(!d||!s||!e||isNaN(r)){$('#prev').textContent='-';return null}
   const a=new Date(d+'T'+s), b=new Date(d+'T'+e);
   if(b<=a) b.setDate(b.getDate()+1);
   const t=b-a, auto=Math.round(t/3600000*r);
-  if(!manual) $('#fa').value=auto;
+  if(!manual&&!keep) $('#fa').value=auto;
   const fin=manual?(parseFloat($('#fa').value)||0):auto;
   $('#prev').textContent=dur(t)+'  =  '+rs(fin)+(manual&&fin!==auto?'  (riyat '+rs(auto-fin)+')':'');
   return {a,b,r,fin};
 }
-['fd','fs','fe','fr'].forEach(i=>$('#'+i).oninput=calc);
-$('#fa').oninput=()=>{manual=$('#fa').value!=='';calc()};
+['fd','fs','fe','fr'].forEach(i=>$('#'+i).oninput=()=>calc());
+$('#fa').oninput=()=>{manual=$('#fa').value!=='';calc(true)};
+$('#fa').onblur=()=>calc();
 $('#fc').onchange=()=>{const c=customers.find(x=>x.id===$('#fc').value);if(c)$('#fr').value=c.rate;calc()};
 function openForm(e){
   if(!customers.length){toast('Pehle banda add karein');return}
