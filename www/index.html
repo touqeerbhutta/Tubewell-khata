@@ -123,7 +123,7 @@ const disc=e=>e.amount!=null&&Math.round(e.amount)!==Math.round(ms(e)/3600000*e.
 const sum=l=>l.reduce((a,e)=>{a.ms+=ms(e);a.m+=amt(e);return a},{ms:0,m:0});
 const COL=['#0b5d6b','#2e7d32','#6a4c93','#c26a1b','#1565c0','#ad1457'];
 const col=n=>COL[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%COL.length];
-const av=n=>`<span class="av" style="background:${col(n)}">${esc((n.trim()[0]||'?').toUpperCase())}</span>`;
+const avOld=n=>`<span class="av" style="background:${col(n)}">${esc((n.trim()[0]||'?').toUpperCase())}</span>`;
 const byName=(a,b)=>a.name.localeCompare(b.name);
 const cn=id=>(customers.find(c=>c.id===id)||{}).name||'';
 const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==='x'?r:(r&3|8)).toString(16)});
@@ -362,6 +362,167 @@ window.addEventListener('online',()=>{setStat();loadAll()});
 window.addEventListener('offline',setStat);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#app').hidden)loadAll()});
 setInterval(()=>{if(Q.length)flush()},15000);
+const avOldRef=avOld;
+const av=n=>{const c=customers.find(x=>x.name===n&&x.photo);return c?`<img class="av" src="${c.photo}" alt="">`:avOldRef(n)};
+document.head.insertAdjacentHTML('beforeend','<style>img.av{object-fit:cover}.ph{display:flex;align-items:center;gap:12px;margin-top:12px}.ph button{width:auto;margin:0;padding:10px 14px}#shot{width:100%;border-radius:10px;border:1px solid var(--ln);margin-top:10px}</style>');
+
+/* ---- bande ki photo ---- */
+let tmpPhoto;
+$('#cmS').insertAdjacentHTML('beforebegin',`<label>Photo (zaroori nahi)</label>
+<div class="ph"><span id="cmPrev"></span><button class="btn s" id="cmPick" type="button">Photo chunein</button><button class="btn d" id="cmRm" type="button" hidden>Hatayen</button></div>
+<input type="file" accept="image/*" id="cmP" hidden>`);
+function setPrev(src,name){
+  const n=name||'?';
+  $('#cmPrev').innerHTML=src?`<img class="av" style="width:64px;height:64px" src="${src}" alt="">`
+    :`<span class="av" style="width:64px;height:64px;background:${col(n)}">${esc((n.trim()[0]||'?').toUpperCase())}</span>`;
+  $('#cmRm').hidden=!src;
+}
+$('#cmPick').onclick=()=>$('#cmP').click();
+$('#cmP').onchange=e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const img=new Image(), url=URL.createObjectURL(f);
+  img.onload=()=>{
+    const S=200, cv=document.createElement('canvas'); cv.width=cv.height=S;
+    const m=Math.min(img.width,img.height), sx=(img.width-m)/2, sy=(img.height-m)/2;
+    cv.getContext('2d').drawImage(img,sx,sy,m,m,0,0,S,S);
+    tmpPhoto=cv.toDataURL('image/jpeg',0.8); URL.revokeObjectURL(url);
+    setPrev(tmpPhoto,$('#cmN').value); e.target.value='';
+  };
+  img.onerror=()=>toast('Photo nahi khuli');
+  img.src=url;
+};
+$('#cmRm').onclick=()=>{tmpPhoto=null;setPrev(null,$('#cmN').value)};
+function openCust(c){
+  custEdit=c?c.id:null; tmpPhoto=undefined;
+  $('#cmT').textContent=c?'Banda theek karein':'Naya banda';
+  $('#cmN').value=c?c.name:''; $('#cmR').value=c?c.rate:''; $('#cmO').value=c&&c.opening?c.opening:'';
+  setPrev(c&&c.photo?c.photo:null,c?c.name:''); $('#cm').hidden=false;
+}
+$('#cmS').onclick=()=>{
+  const name=$('#cmN').value.trim(), rate=parseFloat($('#cmR').value), opening=parseFloat($('#cmO').value)||0;
+  if(!name||isNaN(rate)) return toast('Naam aur rate likhein');
+  $('#cm').hidden=true;
+  const row={name,rate,opening}; if(tmpPhoto!==undefined) row.photo=tmpPhoto;
+  if(custEdit){mut('customers','upd',Object.assign({id:custEdit},row));toast('Badal gaya (purani entries ka rate nahi badla)')}
+  else{mut('customers','ins',Object.assign({id:uid()},row));toast('Banda add ho gaya')}
+};
+
+/* ---- khata ki tasveer ---- */
+const rrect=(x,a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()};
+const fitTxt=(x,t,m)=>{if(x.measureText(t).width<=m)return t;while(t.length>1&&x.measureText(t+'…').width>m)t=t.slice(0,-1);return t+'…'};
+const hh=t=>{const m=Math.round(t/60000);return Math.floor(m/60)+':'+p2(m%60)};
+const sd=d=>new Date(d+'T00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
+const loadImg=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
+
+async function drawKhata(c){
+  const W=1080,P=40,FONT='system-ui,-apple-system,Roboto,sans-serif',k=cs(c),q=ps(c);
+  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const days={},D=d=>days[d]=days[d]||{e:[],p:[]};
+  entries.filter(e=>e.customer_id===c.id).forEach(e=>D(ymd(new Date(e.start_at))).e.push(e));
+  payments.filter(z=>z.customer_id===c.id).forEach(z=>D(ymd(new Date(z.paid_at))).p.push(z));
+  const keys=Object.keys(days).sort(), compact=keys.length>120;
+  let bal=+c.opening||0; const rows=[];
+  if(bal) rows.push({d:'',t:['Pehle ka hisaab (purani book)'],h:'',a:rs(bal),b:rs(bal),k:'o'});
+  keys.forEach(d=>{
+    const g=days[d], es=g.e.slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at));
+    if(es.length){
+      const t=sum(es); bal+=t.m;
+      rows.push({d:sd(d),t:compact?[es.length+' entry']:es.map(e=>tm(e.start_at)+' - '+tm(e.end_at)+(disc(e)?' (riyat)':'')),h:hh(t.ms),a:rs(t.m),b:rs(bal),k:'e'});
+    }
+    g.p.forEach(z=>{
+      if(z.applied) bal-=z.amount;
+      rows.push({d:sd(d),t:['Jama pesay'+(z.applied?'':' (abhi minus nahi)')],h:'',a:(z.applied?'- ':'')+rs(z.amount),b:rs(bal),k:'p'});
+    });
+  });
+  const rowH=r=>Math.max(1,r.t.length)*30+22, TY=498;
+  const H=TY+50+rows.reduce((a,r)=>a+rowH(r),0)+64+90;
+  const sc=Math.min(2,15000/H);
+  const cv=document.createElement('canvas'); cv.width=Math.round(W*sc); cv.height=Math.round(H*sc);
+  const x=cv.getContext('2d'); x.scale(sc,sc);
+  x.fillStyle='#fff'; x.fillRect(0,0,W,H);
+  const gr=x.createLinearGradient(0,0,W,210); gr.addColorStop(0,'#0b5d6b'); gr.addColorStop(1,'#0e7490');
+  x.fillStyle=gr; x.fillRect(0,0,W,210);
+  x.save(); x.beginPath(); x.arc(P+70,105,70,0,Math.PI*2); x.closePath(); x.clip();
+  const im=c.photo?await loadImg(c.photo):null;
+  if(im) x.drawImage(im,P,35,140,140);
+  else{x.fillStyle=col(c.name);x.fillRect(P,35,140,140);x.fillStyle='#fff';x.font='bold 64px '+FONT;x.textAlign='center';x.textBaseline='middle';x.fillText((c.name.trim()[0]||'?').toUpperCase(),P+70,108)}
+  x.restore(); x.textAlign='left'; x.textBaseline='alphabetic';
+  x.fillStyle='#fff'; x.font='bold 46px '+FONT; x.fillText(fitTxt(x,c.name,780),P+170,98);
+  x.globalAlpha=.88; x.font='24px '+FONT;
+  x.fillText('Rate Rs '+c.rate+' per ghanta',P+170,138);
+  x.fillText('Tubewell Khata  ·  '+today,P+170,172); x.globalAlpha=1;
+  const box=(bx,by,label,val,sub,hl)=>{
+    x.fillStyle=hl?'#0b5d6b':'#e6f2f4'; rrect(x,bx,by,480,104,16); x.fill();
+    x.textAlign='left'; x.fillStyle=hl?'#cfe9ee':'#6b7c80'; x.font='22px '+FONT; x.fillText(label,bx+24,by+34);
+    x.fillStyle=hl?'#fff':'#122428'; x.font='bold 34px '+FONT; x.fillText(fitTxt(x,val,sub?260:430),bx+24,by+78);
+    if(sub){x.textAlign='right';x.font='20px '+FONT;x.fillStyle=hl?'#cfe9ee':'#6b7c80';x.fillText(sub,bx+456,by+78)}
+  };
+  box(P,240,'Total pani',dur(k.ms),'');
+  box(P+520,240,'Total paise (hisaab)',rs(k.m),k.o>0?'purana '+rs(k.o):'');
+  box(P,364,'Jama pesay',rs(q.jama),q.pp>0?rs(q.pp)+' minus nahi':'');
+  box(P+520,364,'Baqaya',rs(q.bq),dur(q.bms)+' pani',true);
+  let y=TY;
+  x.fillStyle='#0b5d6b'; x.fillRect(P,y,1000,50);
+  x.fillStyle='#fff'; x.font='bold 22px '+FONT;
+  x.textAlign='left'; x.fillText('Tarikh',P+12,y+33); x.fillText('Tafseel',P+180,y+33);
+  x.textAlign='right'; x.fillText('Ghantay',P+630,y+33); x.fillText('Rakam',P+820,y+33); x.fillText('Baqaya',P+990,y+33);
+  y+=50;
+  rows.forEach((r,i)=>{
+    const h=rowH(r);
+    x.fillStyle=i%2?'#f4f8f9':'#fff'; x.fillRect(P,y,1000,h);
+    x.fillStyle='#e1e8ea'; x.fillRect(P,y+h-1,1000,1);
+    x.fillStyle=r.k==='p'?'#1f7a3d':(r.k==='o'?'#6b7c80':'#122428');
+    x.font='21px '+FONT; x.textAlign='left';
+    x.fillText(r.d,P+12,y+34);
+    r.t.forEach((t,j)=>x.fillText(fitTxt(x,t,340),P+180,y+34+j*30));
+    x.textAlign='right'; x.fillText(r.h,P+630,y+34);
+    x.font='bold 21px '+FONT; x.fillText(r.a,P+820,y+34);
+    x.fillStyle='#122428'; x.fillText(r.b,P+990,y+34);
+    y+=h;
+  });
+  x.fillStyle='#e6f2f4'; x.fillRect(P,y,1000,64);
+  x.fillStyle='#0b5d6b'; x.font='bold 24px '+FONT; x.textAlign='left'; x.fillText('Kul',P+12,y+41);
+  x.textAlign='right'; x.fillText(hh(k.ms),P+630,y+41); x.fillText(rs(k.m),P+820,y+41); x.fillText(rs(q.bq),P+990,y+41);
+  y+=64;
+  x.fillStyle='#6b7c80'; x.font='20px '+FONT; x.textAlign='center';
+  x.fillText('Ghantay = ghanta:minute   ·   Tubewell Khata app se  ·  '+today,W/2,y+46);
+  return cv;
+}
+
+document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="sm" hidden><div class="sheet">
+<h3>Khata ki tasveer</h3><div class="mu" id="sMsg"></div>
+<img id="shot" alt="">
+<button class="btn" id="sShare">Share / Save karein</button>
+<button class="btn s" id="sX">Band karein</button></div></div>`);
+let shotURL='', shotName='khata';
+async function openShot(c){
+  if(!c) return;
+  $('#sm').hidden=false; $('#sMsg').textContent='Tasveer ban rahi hai...'; $('#shot').removeAttribute('src');
+  try{
+    const cv=await drawKhata(c); shotURL=cv.toDataURL('image/png');
+    shotName='khata-'+(c.name.replace(/[^\w]+/g,'-').replace(/^-|-$/g,'')||'banda')+'-'+ymd(new Date());
+    $('#shot').src=shotURL; $('#sMsg').textContent='Tayyar hai. Neeche "Share / Save karein" dabayen.';
+  }catch(e){$('#sMsg').textContent='Masla: '+(e.message||e)}
+}
+$('#sX').onclick=()=>{$('#sm').hidden=true;$('#shot').removeAttribute('src');shotURL=''};
+$('#sShare').onclick=async()=>{
+  if(!shotURL) return;
+  const P=(window.Capacitor&&Capacitor.Plugins)||{}, F=P.Filesystem, S=P.Share;
+  if(!F||!S){const a=document.createElement('a');a.href=shotURL;a.download=shotName+'.png';a.click();return toast('Download shuru')}
+  try{
+    const r=await F.writeFile({path:shotName+'.png',data:shotURL.split(',')[1],directory:'CACHE'});
+    await S.share({title:'Khata',files:[r.uri]});
+  }catch(e){toast('Share nahi hua: '+(e.message||e))}
+};
+const _render=render;
+render=function(){
+  _render();
+  if(view==='detail'&&$('#payBtn')&&!$('#shotBtn')){
+    $('#payBtn').insertAdjacentHTML('afterend','<button class="btn s" id="shotBtn" style="margin:0 0 12px">Khata ki tasveer banayen</button>');
+    $('#shotBtn').onclick=()=>openShot(customers.find(x=>x.id===cid));
+  }
+};
+
 const ps=c=>{
   const k=cs(c),p=payments.filter(x=>x.customer_id===c.id),ap=p.filter(x=>x.applied);
   const pa=ap.reduce((a,x)=>a+x.amount,0), pp=p.filter(x=>!x.applied).reduce((a,x)=>a+x.amount,0);
