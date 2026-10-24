@@ -6,40 +6,65 @@
 <title>Tubewell Khata</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <style>
-:root{--p:#0b5d6b;--p2:#e3f1f3;--bg:#f3f6f7;--ink:#14272b;--mu:#66787c;--ln:#dde5e7;--red:#c0392b}
+:root{--p:#0b5d6b;--soft:#e6f2f4;--bg:#f2f5f7;--ink:#122428;--mu:#6b7c80;--ln:#e1e8ea;--red:#c0392b}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font:15px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+body{margin:0;font:15px/1.4 system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink)}
 [hidden]{display:none!important}
 input,select,button{font:inherit}
-input,select{width:100%;padding:12px;border:1px solid var(--ln);border-radius:10px;background:#fff;color:var(--ink)}
-label{display:block;font-size:13px;color:var(--mu);margin:10px 0 4px}
-.btn{border:0;border-radius:10px;padding:12px 16px;background:var(--p);color:#fff;font-weight:600;width:100%;margin-top:10px}
-.btn.s{background:var(--p2);color:var(--p)}.btn.d{background:#fdecea;color:var(--red)}
-header{background:var(--p);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;display:flex;justify-content:space-between;align-items:center}
-header h1{font-size:18px;margin:0}
-header button{background:none;border:0;color:#fff;opacity:.85}
-main{padding:14px 14px 160px}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom)}
-nav button{flex:1;padding:13px;border:0;background:none;color:var(--mu);font-weight:600}
-nav button.on{color:var(--p);box-shadow:inset 0 -3px 0 var(--p)}
-.card{background:#fff;border:1px solid var(--ln);border-radius:14px;padding:14px;margin-bottom:10px}
-.sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0}
-.sum div{background:var(--p);color:#fff;border-radius:14px;padding:14px}
-.sum small{opacity:.8;display:block}.sum b{font-size:21px}
-.item{display:flex;justify-content:space-between;gap:10px;align-items:center}
+input,select{width:100%;padding:13px;border:1px solid var(--ln);border-radius:12px;background:#fff;color:var(--ink)}
+input:focus,select:focus{outline:2px solid var(--p);border-color:transparent}
+label{display:block;font-size:12px;font-weight:600;color:var(--mu);margin:12px 0 5px}
+.btn{border:0;border-radius:12px;padding:13px 16px;background:var(--p);color:#fff;font-weight:700;width:100%;margin-top:10px}
+.btn.s{background:var(--soft);color:var(--p)}.btn.d{background:#fdecea;color:var(--red)}
+header{position:sticky;top:0;z-index:5;background:linear-gradient(135deg,#0b5d6b,#0e7490);color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 12px 12px;display:flex;align-items:center;gap:6px}
+header h1{font-size:18px;margin:0;flex:1;padding-left:4px}
+header button{background:none;border:0;color:#fff;font-weight:600;opacity:.9;padding:6px 8px}
+#back{font-size:30px;line-height:1;padding:0 8px}
+main{padding:14px 14px 170px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid var(--ln);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;padding:9px;border:0;background:none;color:var(--mu);font-weight:600;font-size:12px;display:flex;flex-direction:column;align-items:center;gap:3px}
+nav button.on{color:var(--p)}
+.fab{position:fixed;right:16px;bottom:calc(72px + env(safe-area-inset-bottom));background:var(--p);color:#fff;border:0;border-radius:30px;padding:15px 22px;font-weight:700;box-shadow:0 6px 18px #0b5d6b66;z-index:6}
+.hero{background:linear-gradient(135deg,#0b5d6b,#0e7490);color:#fff;border-radius:20px;padding:18px;margin-bottom:16px;box-shadow:0 8px 22px #0b5d6b33}
+.hero small{opacity:.8;display:block;font-size:12px}
+.big{font-size:34px;font-weight:800;margin:4px 0 6px}
+.hrow{display:flex;justify-content:space-between;opacity:.9;font-size:13px}
+.hhead{display:flex;gap:12px;align-items:center;margin-bottom:14px}
+.hhead b{font-size:19px;display:block}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two>div{background:#ffffff1f;border-radius:14px;padding:12px}
+.two b{font-size:17px;display:block;margin-top:2px}
+.card{background:#fff;border:1px solid var(--ln);border-radius:16px;padding:14px;margin-bottom:10px}
+.card[data-c]:active,.card[data-e]:active{background:var(--soft)}
+.row{display:flex;align-items:center;gap:12px}
+.grow{flex:1;min-width:0}
+.end{display:flex;align-items:center;gap:6px;text-align:right}
+.chev{color:var(--mu);font-size:22px}
 .mu{color:var(--mu);font-size:13px}
-.fab{position:fixed;right:16px;bottom:calc(68px + env(safe-area-inset-bottom));background:var(--p);color:#fff;border:0;border-radius:28px;padding:15px 22px;font-weight:700;box-shadow:0 4px 14px #0b5d6b66}
-.modal{position:fixed;inset:0;background:#0007;display:flex;align-items:flex-end;z-index:9}
-.sheet{background:#fff;width:100%;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.av{width:44px;height:44px;border-radius:50%;color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}
+.sec{display:flex;justify-content:space-between;align-items:center;margin:4px 2px 10px}
+.sec h2{font-size:13px;margin:0;color:var(--mu);text-transform:uppercase;letter-spacing:.6px}
+.lnk{background:none;border:0;color:var(--p);font-weight:700}
+.chips{display:flex;gap:8px;margin-bottom:4px}
+.chips button{border:1px solid var(--ln);background:#fff;border-radius:20px;padding:8px 16px;color:var(--mu);font-weight:600}
+.chips .on{background:var(--p);color:#fff;border-color:var(--p)}
+.day{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--mu);margin:16px 2px 8px}
+.empty{text-align:center;color:var(--mu);padding:34px 10px}
+.two2{display:grid;gap:4px;margin-top:22px}
+.modal{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;z-index:9}
+.sheet{background:#fff;width:100%;max-height:92vh;overflow:auto;border-radius:22px 22px 0 0;padding:18px 16px calc(16px + env(safe-area-inset-bottom))}
+.sheet h3{margin:0 0 4px;font-size:18px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.prev{background:var(--p2);color:var(--p);border-radius:12px;padding:12px;margin-top:12px;font-weight:700;text-align:center}
-#auth{min-height:100vh;display:flex;align-items:center;padding:20px}
-#auth .card{width:100%;max-width:380px;margin:auto;padding:22px}
-#toast{position:fixed;left:50%;bottom:120px;transform:translateX(-50%);background:#14272b;color:#fff;padding:10px 16px;border-radius:20px;z-index:20}
+.prev{background:var(--soft);color:var(--p);border-radius:14px;padding:14px;margin-top:14px;font-weight:700;text-align:center}
+#auth{min-height:100vh;display:flex;align-items:center;padding:20px;background:linear-gradient(160deg,#0b5d6b,#0e7490)}
+#auth .card{width:100%;max-width:380px;margin:auto;padding:24px;border-radius:22px}
+.logo{width:58px;height:58px;border-radius:50%;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:28px;margin-bottom:10px}
+#toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%);background:#122428;color:#fff;padding:11px 18px;border-radius:22px;z-index:20;max-width:90%;text-align:center}
 </style></head>
 <body>
 <div id="auth" hidden><div class="card">
-<h2 style="margin:0 0 4px;color:var(--p)">Tubewell Khata</h2>
+<div class="logo">💧</div>
+<h2 style="margin:0 0 2px;color:var(--p)">Tubewell Khata</h2>
 <div class="mu">Login karein ya naya account banayen</div>
 <label>Username</label><input id="u" autocapitalize="none" autocomplete="username">
 <label>Password (kam az kam 6 harf)</label><input id="pw" type="password" autocomplete="current-password">
@@ -48,29 +73,16 @@ nav button.on{color:var(--p);box-shadow:inset 0 -3px 0 var(--p)}
 </div></div>
 
 <div id="app" hidden>
-<header><h1 id="ttl">Tubewell Khata</h1><button id="bOut">Logout</button></header>
-<main>
-<section id="v-home">
-<input type="date" id="day">
-<div class="sum"><div><small>Total waqt</small><b id="hT">0</b></div><div><small>Total paise</small><b id="hM">Rs 0</b></div></div>
-<div id="hList"></div>
-</section>
-<section id="v-cust" hidden>
-<div class="card"><label style="margin-top:0">Naam</label><input id="cn"><label>Rate (Rs per ghanta)</label><input id="cr" type="number" inputmode="decimal"><button class="btn" id="cAdd">Banda add karein</button></div>
-<div id="cList"></div>
-</section>
-<section id="v-rep" hidden>
-<div class="g2"><div><label style="margin-top:0">Se</label><input type="date" id="rf"></div><div><label style="margin-top:0">Tak</label><input type="date" id="rt"></div></div>
-<button class="btn" id="rGo">Report dekhein</button>
-<div class="sum"><div><small>Total waqt</small><b id="rT">0</b></div><div><small>Total paise</small><b id="rM">Rs 0</b></div></div>
-<div id="rList"></div>
-</section>
-</main>
+<header><button id="back" hidden>‹</button><h1 id="ttl">Tubewell Khata</h1><button id="bOut">Logout</button></header>
+<main id="main"></main>
 <button class="fab" id="fab">+ Nayi entry</button>
-<nav><button data-v="home" class="on">Hisaab</button><button data-v="cust">Bande</button><button data-v="rep">Report</button></nav>
+<nav>
+<button data-v="khata" class="on"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></svg>Khate</button>
+<button data-v="daily"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Rozana</button>
+</nav>
 
 <div class="modal" id="modal" hidden><div class="sheet">
-<h3 style="margin:0" id="mT">Nayi entry</h3>
+<h3 id="mT">Nayi entry</h3>
 <label>Banda</label><select id="fc"></select>
 <label>Tarikh</label><input type="date" id="fd">
 <div class="g2"><div><label>Kab chalai</label><input type="time" id="fs"></div><div><label>Kab band ki</label><input type="time" id="fe"></div></div>
@@ -79,6 +91,14 @@ nav button.on{color:var(--p);box-shadow:inset 0 -3px 0 var(--p)}
 <button class="btn" id="fSave">Save karein</button>
 <button class="btn d" id="fDel" hidden>Delete karein</button>
 <button class="btn s" id="fX">Band karein</button>
+</div></div>
+
+<div class="modal" id="cm" hidden><div class="sheet">
+<h3 id="cmT">Naya banda</h3>
+<label>Naam</label><input id="cmN">
+<label>Rate (Rs per ghanta)</label><input id="cmR" type="number" inputmode="decimal">
+<button class="btn" id="cmS">Save karein</button>
+<button class="btn s" id="cmX">Band karein</button>
 </div></div>
 </div>
 <div id="toast" hidden></div>
@@ -90,11 +110,19 @@ const $=s=>document.querySelector(s), p2=n=>String(n).padStart(2,'0');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ymd=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
 const tm=iso=>new Date(iso).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
-const dur=ms=>{const m=Math.round(ms/60000);return Math.floor(m/60)+' ghanta '+p2(m%60)+' min'};
-const money=(ms,r)=>Math.round(ms/3600000*r);
-let customers=[], entries=[], editId=null;
+const fd=d=>new Date(d+'T00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+const dur=t=>{const m=Math.round(t/60000);return Math.floor(m/60)+' ghanta '+p2(m%60)+' min'};
+const rs=n=>'Rs '+Math.round(n).toLocaleString('en-IN');
+const ms=e=>new Date(e.end_at)-new Date(e.start_at);
+const amt=e=>Math.round(ms(e)/3600000*e.rate);
+const sum=l=>l.reduce((a,e)=>{a.ms+=ms(e);a.m+=amt(e);return a},{ms:0,m:0});
+const COL=['#0b5d6b','#2e7d32','#6a4c93','#c26a1b','#1565c0','#ad1457'];
+const col=n=>COL[[...n].reduce((a,c)=>a+c.charCodeAt(0),0)%COL.length];
+const av=n=>`<span class="av" style="background:${col(n)}">${esc((n.trim()[0]||'?').toUpperCase())}</span>`;
+const cn=id=>(customers.find(c=>c.id===id)||{}).name||'';
+let customers=[],entries=[],view='khata',cid=null,flt='all',day=ymd(new Date()),editId=null,custEdit=null;
 
-function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;setTimeout(()=>e.hidden=true,2500)}
+function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;setTimeout(()=>e.hidden=true,2600)}
 const mail=u=>u.trim().toLowerCase().replace(/\s+/g,'')+'@tubewell.app';
 
 async function doAuth(signup){
@@ -113,66 +141,101 @@ async function boot(){
   const {data:{session}}=await sb.auth.getSession();
   $('#auth').hidden=!!session; $('#app').hidden=!session;
   if(!session) return;
-  $('#day').value=ymd(new Date());
-  const t=ymd(new Date()); $('#rf').value=t.slice(0,8)+'01'; $('#rt').value=t;
-  await loadCust(); await loadDay();
+  view='khata'; day=ymd(new Date());
+  await loadAll();
 }
-async function loadCust(){
-  const {data,error}=await sb.from('customers').select('*').order('name');
-  if(error) return toast(error.message);
-  customers=data; renderCust();
+async function loadAll(){
+  const c=await sb.from('customers').select('*').order('name');
+  if(c.error) return toast(c.error.message);
+  customers=c.data;
+  let all=[],from=0;
+  while(true){
+    const r=await sb.from('entries').select('*').order('start_at',{ascending:false}).range(from,from+999);
+    if(r.error){toast(r.error.message);break}
+    all=all.concat(r.data); if(r.data.length<1000) break; from+=1000;
+  }
+  entries=all; render();
 }
-async function fetchEntries(from,to){
-  const a=new Date(from+'T00:00:00'), b=new Date(to+'T00:00:00'); b.setDate(b.getDate()+1);
-  const {data,error}=await sb.from('entries').select('*, customers(name)')
-    .gte('start_at',a.toISOString()).lt('start_at',b.toISOString()).order('start_at');
-  if(error){toast(error.message);return []} return data;
-}
-async function loadDay(){entries=await fetchEntries($('#day').value,$('#day').value);renderDay()}
 
-function entryRow(e){
-  const ms=new Date(e.end_at)-new Date(e.start_at);
-  return `<div class="card item" data-id="${e.id}"><div><b>${esc(e.customers?.name||'')}</b>
-  <div class="mu">${tm(e.start_at)} se ${tm(e.end_at)} &middot; ${dur(ms)}</div></div>
-  <b>Rs ${money(ms,e.rate).toLocaleString()}</b></div>`;
+function render(){
+  $('#back').hidden=view!=='detail';
+  $('#ttl').textContent=view==='detail'?cn(cid):'Tubewell Khata';
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===(view==='detail'?'khata':view)));
+  ({khata:rKhata,daily:rDaily,detail:rDetail})[view]();
 }
-function totals(list){let t=0,m=0;list.forEach(e=>{const ms=new Date(e.end_at)-new Date(e.start_at);t+=ms;m+=money(ms,e.rate)});return [t,m]}
-function renderDay(){
-  const [t,m]=totals(entries);
-  $('#hT').textContent=dur(t); $('#hM').textContent='Rs '+m.toLocaleString();
-  $('#hList').innerHTML=entries.length?entries.map(entryRow).join(''):'<div class="card mu">Is din ki koi entry nahi. "+ Nayi entry" dabayen.</div>';
-  document.querySelectorAll('#hList [data-id]').forEach(el=>el.onclick=()=>openForm(entries.find(x=>x.id===el.dataset.id)));
+const go=v=>{view=v;render();scrollTo(0,0)};
+const bindE=()=>document.querySelectorAll('[data-e]').forEach(el=>el.onclick=()=>openForm(entries.find(x=>x.id===el.dataset.e)));
+
+function rKhata(){
+  const t=sum(entries);
+  let h=`<div class="hero"><small>Kul hisaab (sab bande)</small><div class="big">${rs(t.m)}</div><div class="hrow"><span>${dur(t.ms)}</span><span>${customers.length} bande</span></div></div>
+  <div class="sec"><h2>Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
+  h+=customers.length?customers.map(c=>{const s=sum(entries.filter(e=>e.customer_id===c.id));
+    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><div class="mu">${dur(s.ms)} &middot; Rs ${c.rate}/ghanta</div></div><div class="end"><b>${rs(s.m)}</b><span class="chev">›</span></div></div>`}).join('')
+    :'<div class="empty">Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.</div>';
+  $('#main').innerHTML=h;
+  $('#addC').onclick=()=>openCust(null);
+  document.querySelectorAll('[data-c]').forEach(el=>el.onclick=()=>{cid=el.dataset.c;flt='all';go('detail')});
 }
-function renderCust(){
-  $('#cList').innerHTML=customers.length?customers.map(c=>`<div class="card item"><div><b>${esc(c.name)}</b><div class="mu">Rs ${c.rate} per ghanta</div></div><button class="btn d" style="width:auto;margin:0" data-del="${c.id}">Hatayen</button></div>`).join(''):'<div class="card mu">Abhi koi banda nahi. Upar se add karein.</div>';
-  document.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
-    if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?'))return;
-    const {error}=await sb.from('customers').delete().eq('id',b.dataset.del);
-    if(error)return toast(error.message); await loadCust(); loadDay();
-  });
+
+function inFlt(e){
+  const d=new Date(e.start_at),n=new Date();
+  if(flt==='today') return ymd(d)===ymd(n);
+  if(flt==='month') return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth();
+  return true;
 }
-$('#cAdd').onclick=async()=>{
-  const name=$('#cn').value.trim(), rate=parseFloat($('#cr').value);
+function rDetail(){
+  const c=customers.find(x=>x.id===cid);
+  if(!c){view='khata';return render()}
+  const list=entries.filter(e=>e.customer_id===cid&&inFlt(e)), s=sum(list), groups={};
+  list.forEach(e=>{const k=ymd(new Date(e.start_at));(groups[k]=groups[k]||[]).push(e)});
+  let h=`<div class="hero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rs ${c.rate} per ghanta</small></div></div>
+  <div class="two"><div><small>Total pani</small><b>${dur(s.ms)}</b></div><div><small>Total paise</small><b>${rs(s.m)}</b></div></div></div>
+  <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([k,l])=>`<button class="${flt===k?'on':''}" data-f="${k}">${l}</button>`).join('')}</div>`;
+  const keys=Object.keys(groups).sort().reverse();
+  h+=keys.length?keys.map(k=>{
+    const g=groups[k].slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), gs=sum(g);
+    return `<div class="day"><span>${fd(k)}</span><span>${dur(gs.ms)} &middot; ${rs(gs.m)}</span></div>`+
+    g.map(e=>`<div class="card row" data-e="${e.id}"><div class="grow"><b>${tm(e.start_at)} se ${tm(e.end_at)}</b><div class="mu">${dur(ms(e))} &middot; Rs ${e.rate}/ghanta</div></div><b>${rs(amt(e))}</b></div>`).join('');
+  }).join(''):'<div class="empty">Is muddat mein koi entry nahi.</div>';
+  h+=`<div class="two2"><button class="btn s" id="eC">Naam / rate badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
+  $('#main').innerHTML=h;
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
+  $('#eC').onclick=()=>openCust(c);
+  $('#dC').onclick=async()=>{
+    if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?')) return;
+    const {error}=await sb.from('customers').delete().eq('id',cid);
+    if(error) return toast(error.message);
+    view='khata'; await loadAll();
+  };
+  bindE();
+}
+function rDaily(){
+  const list=entries.filter(e=>ymd(new Date(e.start_at))===day).sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), s=sum(list);
+  $('#main').innerHTML=`<input type="date" id="day" value="${day}" style="margin-bottom:14px">
+  <div class="hero"><div class="two"><div><small>Total waqt</small><b>${dur(s.ms)}</b></div><div><small>Total paise</small><b>${rs(s.m)}</b></div></div></div>`+
+  (list.length?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b>${esc(cn(e.customer_id))}</b><div class="mu">${tm(e.start_at)} se ${tm(e.end_at)} &middot; ${dur(ms(e))}</div></div><b>${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
+  $('#day').onchange=ev=>{day=ev.target.value||ymd(new Date());rDaily()};
+  bindE();
+}
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+$('#back').onclick=()=>go('khata');
+
+function openCust(c){
+  custEdit=c?c.id:null;
+  $('#cmT').textContent=c?'Naam / rate badlein':'Naya banda';
+  $('#cmN').value=c?c.name:''; $('#cmR').value=c?c.rate:'';
+  $('#cm').hidden=false;
+}
+$('#cmX').onclick=()=>$('#cm').hidden=true;
+$('#cmS').onclick=async()=>{
+  const name=$('#cmN').value.trim(), rate=parseFloat($('#cmR').value);
   if(!name||isNaN(rate)) return toast('Naam aur rate likhein');
-  const {error}=await sb.from('customers').insert({name,rate});
-  if(error) return toast(error.message);
-  $('#cn').value='';$('#cr').value=''; loadCust();
-};
-
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
-  document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('on',x===b));
-  ['home','cust','rep'].forEach(v=>$('#v-'+v).hidden=v!==b.dataset.v);
-  $('#fab').hidden=b.dataset.v==='cust'||b.dataset.v==='rep';
-});
-$('#day').onchange=loadDay;
-
-$('#rGo').onclick=async()=>{
-  const list=await fetchEntries($('#rf').value,$('#rt').value);
-  const [t,m]=totals(list); $('#rT').textContent=dur(t); $('#rM').textContent='Rs '+m.toLocaleString();
-  const per={};
-  list.forEach(e=>{const n=e.customers?.name||'';const ms=new Date(e.end_at)-new Date(e.start_at);
-    per[n]=per[n]||{ms:0,m:0};per[n].ms+=ms;per[n].m+=money(ms,e.rate)});
-  $('#rList').innerHTML=Object.entries(per).map(([n,v])=>`<div class="card item"><div><b>${esc(n)}</b><div class="mu">${dur(v.ms)}</div></div><b>Rs ${v.m.toLocaleString()}</b></div>`).join('')||'<div class="card mu">Is muddat mein koi entry nahi.</div>';
+  const q=custEdit?sb.from('customers').update({name,rate}).eq('id',custEdit):sb.from('customers').insert({name,rate});
+  const {error}=await q; if(error) return toast(error.message);
+  $('#cm').hidden=true; await loadAll();
+  toast(custEdit?'Badal gaya (purani entries ka rate nahi badla)':'Banda add ho gaya');
 };
 
 function calc(){
@@ -180,14 +243,14 @@ function calc(){
   if(!d||!s||!e||isNaN(r)){$('#prev').textContent='-';return null}
   const a=new Date(d+'T'+s), b=new Date(d+'T'+e);
   if(b<=a) b.setDate(b.getDate()+1);
-  const ms=b-a; $('#prev').textContent=dur(ms)+'  =  Rs '+money(ms,r).toLocaleString();
+  const t=b-a; $('#prev').textContent=dur(t)+'  =  '+rs(t/3600000*r);
   return {a,b,r};
 }
 ['fd','fs','fe','fr'].forEach(i=>$('#'+i).oninput=calc);
 $('#fc').onchange=()=>{const c=customers.find(x=>x.id===$('#fc').value);if(c)$('#fr').value=c.rate;calc()};
 
 function openForm(e){
-  if(!customers.length){toast('Pehle "Bande" tab mein banda add karein');return}
+  if(!customers.length){toast('Pehle banda add karein');return}
   editId=e?e.id:null;
   $('#mT').textContent=e?'Entry theek karein':'Nayi entry';
   $('#fc').innerHTML=customers.map(c=>`<option value="${c.id}">${esc(c.name)}</option>`).join('');
@@ -198,8 +261,9 @@ function openForm(e){
     $('#fs').value=p2(a.getHours())+':'+p2(a.getMinutes());
     $('#fe').value=p2(b.getHours())+':'+p2(b.getMinutes()); $('#fr').value=e.rate;
   }else{
-    $('#fd').value=$('#day').value; $('#fs').value=''; $('#fe').value='';
-    $('#fr').value=customers[0].rate;
+    const c=(view==='detail'&&customers.find(x=>x.id===cid))||customers[0];
+    $('#fc').value=c.id; $('#fd').value=view==='daily'?day:ymd(new Date());
+    $('#fs').value=''; $('#fe').value=''; $('#fr').value=c.rate;
   }
   calc(); $('#modal').hidden=false;
 }
@@ -210,12 +274,14 @@ $('#fSave').onclick=async()=>{
   const row={customer_id:$('#fc').value,start_at:v.a.toISOString(),end_at:v.b.toISOString(),rate:v.r};
   const q=editId?sb.from('entries').update(row).eq('id',editId):sb.from('entries').insert(row);
   const {error}=await q; if(error) return toast(error.message);
-  $('#modal').hidden=true; $('#day').value=$('#fd').value; loadDay(); toast('Save ho gaya');
+  if(view==='daily') day=$('#fd').value;
+  $('#modal').hidden=true; await loadAll(); toast('Save ho gaya');
 };
 $('#fDel').onclick=async()=>{
-  if(!confirm('Ye entry delete karein?'))return;
+  if(!confirm('Ye entry delete karein?')) return;
   const {error}=await sb.from('entries').delete().eq('id',editId);
-  if(error)return toast(error.message); $('#modal').hidden=true; loadDay();
+  if(error) return toast(error.message);
+  $('#modal').hidden=true; await loadAll();
 };
 boot();
 </script>
