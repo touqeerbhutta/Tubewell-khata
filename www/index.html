@@ -1016,6 +1016,113 @@ render=function(){
   if(first){const m=$('#main');m.classList.add('enter');setTimeout(()=>m.classList.remove('enter'),900)}
 };
 
+/* ---- login mobiles ---- */
+const DID=localStorage.getItem('tk_did')||(()=>{const i=uid();localStorage.setItem('tk_did',i);return i})();
+const uaName=()=>{const m=/Android[^;]*;\s*([^;)]+?)(?:\s+Build|;|\))/.exec(navigator.userAgent);const mo=m&&m[1].trim();return(mo&&mo!=='K'&&mo.length>1)?mo:'Android mobile'};
+const agoTxt=t=>{const m=Math.max(1,Math.round(t/60000));if(m<60)return m+' min pehle';const h=Math.round(m/60);if(h<48)return h+' ghante pehle';return Math.round(h/24)+' din pehle'};
+let devices=[], dch=null, rlBusy=false;
+
+async function remoteLogout(){
+  if(rlBusy) return; rlBusy=true;
+  try{await flush()}catch(e){}
+  try{await sb.from('devices').delete().eq('id',DID)}catch(e){}
+  try{await sb.auth.signOut({scope:'local'})}catch(e){}
+  if(ch){sb.removeChannel(ch);ch=null}
+  if(dch){sb.removeChannel(dch);dch=null}
+  ['tk_uid',LS,'tk_name','tk_login'].forEach(k=>localStorage.removeItem(k));
+  customers=[];entries=[];payments=[];Q=[];
+  rlBusy=false; boot(); toast('Is mobile ko doosre mobile se logout kar diya gaya');
+}
+async function beat(){
+  if(!navigator.onLine||document.hidden||!localStorage.getItem('tk_uid')) return;
+  try{
+    const r=await sb.from('devices').update({last_seen:new Date().toISOString()}).eq('id',DID).select('revoked');
+    if(!r.error&&r.data&&r.data[0]&&r.data[0].revoked) remoteLogout();
+  }catch(e){}
+}
+function listenDevices(){
+  if(dch) return;
+  dch=sb.channel('tkd').on('postgres_changes',{event:'*',schema:'public',table:'devices'},p=>{
+    const row=(p.new&&p.new.id)?p.new:p.old; if(!row) return;
+    if(row.id===DID&&p.eventType!=='DELETE'&&row.revoked){remoteLogout();return}
+    if(view==='settings') loadDevices();
+  }).subscribe();
+}
+async function startDevice(){
+  if(!navigator.onLine) return;
+  try{
+    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
+    const r=await sb.from('devices').select('revoked,name').eq('id',DID).maybeSingle();
+    if(r.error) return;
+    if(r.data&&r.data.revoked){
+      if(window._fresh) await sb.from('devices').update({revoked:false}).eq('id',DID);
+      else return remoteLogout();
+    }
+    window._fresh=false;
+    if(!r.data) await sb.from('devices').insert({id:DID,name:localStorage.getItem('tk_dname')||uaName()});
+    else{localStorage.setItem('tk_dname',r.data.name);await beat()}
+    listenDevices(); loadDevices();
+  }catch(e){}
+}
+sb.auth.onAuthStateChange((ev,s)=>{if(s&&s.user&&(ev==='SIGNED_IN'||ev==='INITIAL_SESSION')) setTimeout(startDevice,700)});
+const _da=doAuth;
+doAuth=async function(sg){window._fresh=true;await _da(sg)};
+setInterval(beat,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden) beat()});
+window.addEventListener('online',()=>setTimeout(startDevice,800));
+const _oldOut=$('#bOut').onclick;
+$('#bOut').onclick=async()=>{
+  if(!Q.length){try{await sb.from('devices').delete().eq('id',DID)}catch(e){}}
+  _oldOut();
+};
+
+async function loadDevices(){
+  if(!navigator.onLine) return;
+  const r=await sb.from('devices').select('*').order('last_seen',{ascending:false});
+  if(r.error) return; devices=r.data; paintDevices();
+}
+function paintDevices(){
+  const box=$('#devList'); if(!box) return;
+  const live=devices.filter(d=>!d.revoked);
+  $('#devT').textContent='Login mobiles ('+live.length+')';
+  box.innerHTML=devices.length?devices.map(d=>{
+    const me=d.id===DID, ago=Date.now()-new Date(d.last_seen), on=ago<150000;
+    return `<div class="row" style="padding:10px 0;border-top:1px solid var(--ln);${d.revoked?'opacity:.5':''}"><span class="av" style="width:40px;height:40px;font-size:18px;background:${me?'#0b5d6b':'#6b7c80'}">📱</span><div class="grow"><b>${esc(d.name)}</b>${me?' <span class="mu">(ye mobile)</span>':''}<div class="mu">${d.revoked?'Logout ho raha hai...':(on?'Abhi online':'Aakhri baar '+agoTxt(ago))}</div></div>${(!me&&!d.revoked)?`<button class="btn d" style="width:auto;margin:0;padding:9px 12px" data-lo="${d.id}">Logout</button>`:''}</div>`}).join('')
+    :'<div class="mu" style="padding-top:8px">Abhi koi record nahi</div>';
+  box.querySelectorAll('[data-lo]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Is mobile ko logout karein?')) return;
+    const {error}=await sb.from('devices').update({revoked:true}).eq('id',b.dataset.lo);
+    if(error) return toast(error.message);
+    toast('Logout ka hukm bhej diya'); loadDevices();
+  });
+}
+const _rs2=rSettings;
+rSettings=function(){
+  _rs2();
+  $('#main').insertAdjacentHTML('beforeend',`<div class="card"><b id="devT">Login mobiles</b>
+  <div class="mu">Aap ki id jin phones par login hai.</div>
+  <div id="devList"><div class="mu" style="padding-top:8px">Load ho raha hai...</div></div>
+  <button class="btn d" id="dAll">Baqi sab mobiles se pakka logout</button>
+  <label>Is mobile ka naam</label><input id="dN" maxlength="30" value="${esc(localStorage.getItem('tk_dname')||uaName())}">
+  <button class="btn s" id="dNs">Naam save karein</button></div>`);
+  $('#dNs').onclick=async()=>{
+    const n=$('#dN').value.trim(); if(!n) return toast('Naam likhein');
+    if(!navigator.onLine) return toast('Internet chahiye');
+    const {error}=await sb.from('devices').update({name:n}).eq('id',DID);
+    if(error) return toast(error.message);
+    localStorage.setItem('tk_dname',n); toast('Naam save ho gaya'); loadDevices();
+  };
+  $('#dAll').onclick=async()=>{
+    if(!confirm('Baqi sab mobiles foran logout ho jayenge. Pakka?')) return;
+    if(!navigator.onLine) return toast('Internet chahiye');
+    await sb.from('devices').update({revoked:true}).neq('id',DID);
+    const {error}=await sb.auth.signOut({scope:'others'});
+    if(error) return toast(error.message);
+    toast('Baqi sab mobiles logout'); loadDevices();
+  };
+  paintDevices(); loadDevices();
+};
+
 boot();
 </script>
 </body></html>
