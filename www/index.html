@@ -200,6 +200,17 @@ main.enter>*:nth-child(n+5){animation-delay:.2s!important}
 <style>
 
 </style>
+<script>
+window.__errs=[];
+window.addEventListener('error',function(e){window.__errs.push((e.message||'')+' @'+(e.lineno||''))});
+setTimeout(function(){
+  var a=document.getElementById('app'),u=document.getElementById('auth');
+  if(a&&u&&a.hidden&&u.hidden){
+    document.body.insertAdjacentHTML('beforeend','<div style="position:fixed;left:0;right:0;top:0;bottom:0;z-index:2000;background:#fff;color:#122428;padding:24px;font:15px system-ui;overflow:auto"><h3>App shuru nahi ho saki</h3><p>Is ka screenshot bhej dein:</p><pre style="white-space:pre-wrap;background:#f2f5f7;padding:12px;border-radius:12px">'+(window.__errs.join('\n')||'koi error nahi mila')+'</pre><button style="padding:14px;border:0;border-radius:12px;background:#0a5f6e;color:#fff;font-weight:700;width:100%" onclick="try{Capacitor.Plugins.CapacitorUpdater.reset().then(function(){location.reload()})}catch(e){location.reload()}">Asli (APK wale) version par wapas jao</button></div>');
+  }
+},7000);
+</script>
+
 </head>
 <body>
 <div id="splash"><svg viewBox="0 0 360 260" aria-hidden="true">
@@ -1586,7 +1597,7 @@ render=function(){_inR=true;_grpE=null;_csM=new Map();try{_rFast()}finally{_inR=
 /* ---- khate ki screen: aasan aur rangeen ---- */
 document.head.insertAdjacentHTML('beforeend','<style>.cpf{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:20px;padding:14px;box-shadow:var(--sh)}.cpf b{font-size:20px;display:block}.bqc{border-radius:24px;padding:20px;color:#fff;margin:12px 0;box-shadow:0 12px 26px rgba(0,0,0,.16)}.bqc.due{background:linear-gradient(135deg,#b4531a,#e8872f)}.bqc.ok{background:linear-gradient(135deg,#1b7a45,#38b56d)}.bqc.over{background:linear-gradient(135deg,#08505d,#17a2b8)}.bqc small{display:block;font-size:14px;opacity:.95}.bqn{font-size:42px;font-weight:800;margin:6px 0;font-variant-numeric:tabular-nums}.bqs{font-size:15px;font-weight:600}.bqh{margin-top:10px;background:rgba(255,255,255,.2);border-radius:12px;padding:8px 12px;font-size:14px}.eqc{background:var(--card);border-radius:20px;padding:14px 16px;box-shadow:var(--sh);margin-bottom:12px}.eqt{font-weight:800;margin-bottom:4px}.eqr{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px dashed var(--ln);font-variant-numeric:tabular-nums}.eqr .op{width:22px;text-align:center;font-style:normal;font-weight:800;color:var(--mu);font-size:18px}.eqr span{flex:1}.eqr .g{color:var(--ok)}.eqr.tot{border-top:2px solid var(--ink);font-weight:800}.eqp{margin-top:8px;padding:10px 12px;background:var(--soft);border-radius:12px;font-size:14px}.bigb{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}.bb{border:0;border-radius:18px;padding:16px 8px;font-weight:800;font-size:15px;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 8px 18px rgba(0,0,0,.14);width:100%;margin:0}.bb .em{font-size:26px}.bb.w{background:linear-gradient(135deg,#0a5f6e,#0f8aa0)}.bb.g{background:linear-gradient(135deg,#1b7a45,#38b56d)}.bb:active{transform:scale(.97)}.pend{background:#fff4e0;color:#8a5a12;border-radius:16px;padding:12px 14px;margin-bottom:10px;font-size:14px}.pend .btn{margin-top:10px}.dcard{background:var(--card);border-radius:20px;box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}.dh{padding:12px 14px;font-weight:800;background:var(--soft);color:var(--p)}.dh .em{margin-inline-end:6px}.dr{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--ln)}.dr:active{background:var(--soft)}.di{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}.di.w{background:rgba(15,138,160,.18)}.di.g{background:rgba(31,138,76,.18)}.da{white-space:nowrap;font-variant-numeric:tabular-nums}.gg{color:var(--ok)}.df{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;background:var(--bg);font-size:13px;color:var(--mu)}.df b{color:var(--ink)}@media (prefers-color-scheme:dark){.pend{background:#3a2c12;color:#f1c27d}}</style>');
 
-Object.assign(UR,{
+if(typeof UR!=='undefined')Object.assign(UR,{
  'Pani ki nayi entry':'پانی کی نئی انٹری',
  'Is bande se aap ko lene hain':'اس بندے سے آپ کو لینے ہیں',
  'Is bande ne zyada paise de diye hain':'اس بندے نے زیادہ پیسے دے دیے ہیں',
@@ -1608,7 +1619,7 @@ Object.assign(UR,{
  'jama hain, lekin abhi hisaab se kam nahi kiye':'جمع ہیں، لیکن ابھی حساب سے کم نہیں کیے',
  'Ab hisaab se kam karein':'اب حساب سے کم کریں'
 });
-URP.push([/^Ek ghante ka rate: /,'ایک گھنٹے کا ریٹ: ']);
+if(typeof URP!=='undefined')URP.push([/^Ek ghante ka rate: /,'ایک گھنٹے کا ریٹ: ']);
 
 function rDetail(){
   const c=customers.find(x=>x.id===cid);
