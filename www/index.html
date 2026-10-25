@@ -1135,10 +1135,21 @@ async function otaCurrent(){
   if(!UP) return '';
   try{const c=await UP.current();return (c.bundle&&c.bundle.version)||'builtin'}catch(e){return ''}
 }
+async function otaDl(){
+  const o={url:otaInfo.url,version:String(otaInfo.version)};
+  if(otaInfo.checksum){
+    try{return await UP.download(Object.assign({checksum:otaInfo.checksum},o))}
+    catch(e1){
+      try{return await UP.download(o)}
+      catch(e2){throw new Error('checksum ke saath: '+(e1&&e1.message||e1)+' || bina checksum: '+(e2&&e2.message||e2))}
+    }
+  }
+  return UP.download(o);
+}
 async function otaPrefetch(){
   if(!UP||!otaInfo||otaBusy||otaBundle) return;
   try{
-    otaBundle=await UP.download({url:otaInfo.url,version:String(otaInfo.version)});
+    otaBundle=await otaDl();
     try{await UP.next({id:otaBundle.id})}catch(e){}
   }catch(e){otaBundle=null}
 }
@@ -1164,9 +1175,9 @@ $('#otaB').onclick=async()=>{
   otaBusy=true; const b=$('#otaB'); b.disabled=true; b.textContent='Lag raha hai...';
   try{
     await flush();
-    if(!otaBundle) otaBundle=await UP.download({url:otaInfo.url,version:String(otaInfo.version)});
+    if(!otaBundle) otaBundle=await otaDl();
     await UP.set(otaBundle);
-  }catch(e){otaBusy=false;b.disabled=false;b.textContent='Dobara koshish';toast('Update nahi hua: '+(e.message||e))}
+  }catch(e){otaBusy=false;b.disabled=false;b.textContent='Dobara koshish';{toast('Update nahi hua');alert('Update nahi hua: '+(e&&e.message||JSON.stringify(e)))}}
 };
 const _rs3=rSettings;
 rSettings=function(){

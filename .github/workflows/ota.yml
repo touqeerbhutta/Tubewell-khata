@@ -23,8 +23,9 @@ jobs:
         run: |
           mkdir site
           V=${{ github.run_number }}
-          (cd www && zip -r -q ../site/bundle-$V.zip .)
-          echo "{\"version\":\"$V\",\"url\":\"https://touqeerbhutta.github.io/Tubewell-khata/bundle-$V.zip\"}" > site/version.json
+          (cd www && zip -r -q -X -D ../site/bundle-$V.zip .)
+          CS=$(sha256sum site/bundle-$V.zip | cut -d' ' -f1)
+          echo "{\"version\":\"$V\",\"url\":\"https://touqeerbhutta.github.io/Tubewell-khata/bundle-$V.zip\",\"checksum\":\"$CS\"}" > site/version.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
