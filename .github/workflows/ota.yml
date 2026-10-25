@@ -1,0 +1,33 @@
+name: OTA Update
+on:
+  push:
+    branches: [main]
+    paths: ['www/**', '.github/workflows/ota.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.dep.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bundle banayen
+        run: |
+          mkdir site
+          V=${{ github.run_number }}
+          (cd www && zip -r -q ../site/bundle-$V.zip .)
+          echo "{\"version\":\"$V\",\"url\":\"https://touqeerbhutta.github.io/Tubewell-khata/bundle-$V.zip\"}" > site/version.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+      - id: dep
+        uses: actions/deploy-pages@v4
