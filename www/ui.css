@@ -124,3 +124,87 @@ nav button.on{background:var(--soft);color:var(--p)}
   input,select{background:#0e1b1f}
   .prev{background:linear-gradient(135deg,#1b3238,#1f3d46)}
 }
+
+/* 11 ---- Detail tiles: 2 ya 3 tiles (jama sirf tab jab minus nahi hua) ---- */
+.kb.kb2{grid-template-columns:repeat(2,1fr)}
+.kb .pend small{color:#b86a14}
+.kb .pend b{color:#b86a14}
+input[type=range]{padding:0;border:0;background:transparent;height:34px;accent-color:var(--p2);box-shadow:none}
+input[type=range]:focus{box-shadow:none}
+
+/* 12 ---- LIQUID GLASS (html.glass) ----
+   --gl = intensity 0.10 .. 1.00 (Setting mein slider). Off hone par html.glass class hat jati ha. */
+html{--gl:.6}
+html.glass body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+   radial-gradient(60% 38% at 12% 8%,rgba(18,160,182,calc(var(--gl)*.40)),transparent 70%),
+   radial-gradient(55% 34% at 95% 42%,rgba(124,92,230,calc(var(--gl)*.26)),transparent 70%),
+   radial-gradient(60% 40% at 15% 96%,rgba(24,196,140,calc(var(--gl)*.30)),transparent 70%)}
+
+/* cards, tiles, table, chips, inputs */
+html.glass :is(.card,.kb>div,.kt,.chips,.empty,#auth .card){
+  background:rgba(255,255,255,calc(.90 - var(--gl)*.46));
+  -webkit-backdrop-filter:blur(calc(var(--gl)*22px)) saturate(calc(1 + var(--gl)*.9));
+  backdrop-filter:blur(calc(var(--gl)*22px)) saturate(calc(1 + var(--gl)*.9));
+  border:1px solid rgba(255,255,255,calc(.40 + var(--gl)*.45));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,calc(.55 + var(--gl)*.45)),inset 0 -1px 0 rgba(255,255,255,calc(var(--gl)*.25)),0 10px 30px rgba(10,70,90,calc(.07 + var(--gl)*.08))}
+html.glass .chips button.on{background:rgba(255,255,255,calc(.55 + var(--gl)*.4));box-shadow:inset 0 1px 0 #fff,0 3px 10px #0a5f6e22}
+html.glass .kr.alt{background:rgba(255,255,255,calc(var(--gl)*.12))}
+html.glass .kr.tot{background:rgba(15,138,160,.14)}
+html.glass .card[data-c]:active,html.glass .card[data-e]:active{background:rgba(255,255,255,.9)}
+
+/* floating bars */
+html.glass nav{background:rgba(255,255,255,calc(.88 - var(--gl)*.52));
+  -webkit-backdrop-filter:blur(calc(var(--gl)*30px)) saturate(calc(1 + var(--gl)*1.1));
+  backdrop-filter:blur(calc(var(--gl)*30px)) saturate(calc(1 + var(--gl)*1.1));
+  border:1px solid rgba(255,255,255,calc(.5 + var(--gl)*.4));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,calc(var(--gl)*.3)),0 14px 36px rgba(10,60,80,.22)}
+html.glass nav button.on{background:rgba(15,138,160,calc(.12 + var(--gl)*.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.8)}
+html.glass .fab{background:linear-gradient(135deg,rgba(10,95,110,calc(1 - var(--gl)*.38)),rgba(18,160,182,calc(1 - var(--gl)*.38)));
+  -webkit-backdrop-filter:blur(calc(var(--gl)*18px)) saturate(1.6);backdrop-filter:blur(calc(var(--gl)*18px)) saturate(1.6);
+  border:1px solid rgba(255,255,255,calc(.25 + var(--gl)*.35));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,calc(.35 + var(--gl)*.4)),0 14px 30px rgba(10,95,110,.4)}
+html.glass header{background:linear-gradient(140deg,rgba(7,63,73,calc(1 - var(--gl)*.28)),rgba(18,160,182,calc(1 - var(--gl)*.28)));
+  -webkit-backdrop-filter:blur(calc(var(--gl)*24px)) saturate(1.5);backdrop-filter:blur(calc(var(--gl)*24px)) saturate(1.5);
+  border-bottom:1px solid rgba(255,255,255,calc(var(--gl)*.35));box-shadow:inset 0 -1px 0 rgba(255,255,255,calc(var(--gl)*.25)),0 10px 28px #0a5f6e40}
+html.glass :is(header button#bOut,.stat,.kchip,.lnk,#back){
+  background:rgba(255,255,255,calc(.12 + var(--gl)*.12));
+  -webkit-backdrop-filter:blur(calc(var(--gl)*14px));backdrop-filter:blur(calc(var(--gl)*14px));
+  border:1px solid rgba(255,255,255,calc(.22 + var(--gl)*.3));box-shadow:inset 0 1px 0 rgba(255,255,255,calc(.3 + var(--gl)*.4))}
+html.glass .lnk{background:rgba(15,138,160,calc(.10 + var(--gl)*.08));border-color:rgba(255,255,255,calc(.4 + var(--gl)*.4));color:var(--p)}
+
+/* hero: glossy edge + highlight */
+html.glass .hero{border:1px solid rgba(255,255,255,calc(.16 + var(--gl)*.30));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,calc(.25 + var(--gl)*.45)),inset 0 -26px 46px rgba(255,255,255,calc(var(--gl)*.07)),0 18px 38px #0a5f6e4d}
+html.glass .hero::before{background:radial-gradient(circle at 30% 30%,rgba(255,255,255,calc(.16 + var(--gl)*.26)),rgba(255,255,255,.03) 70%)}
+
+/* buttons, inputs, sheets, toasts */
+html.glass .btn{box-shadow:inset 0 1px 0 rgba(255,255,255,calc(.25 + var(--gl)*.3)),0 10px 22px #0a5f6e38}
+html.glass .btn.s{background:rgba(15,138,160,calc(.10 + var(--gl)*.08));box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+html.glass :is(input,select){background:rgba(255,255,255,calc(.85 - var(--gl)*.3));border-color:rgba(255,255,255,.8)}
+html.glass .sheet{background:rgba(255,255,255,calc(.94 - var(--gl)*.34));
+  -webkit-backdrop-filter:blur(calc(var(--gl)*34px)) saturate(calc(1 + var(--gl)));backdrop-filter:blur(calc(var(--gl)*34px)) saturate(calc(1 + var(--gl)));
+  border-top:1px solid rgba(255,255,255,.9);box-shadow:inset 0 1px 0 #fff,0 -14px 44px #0005}
+html.glass .modal{background:rgba(6,24,28,calc(.25 + var(--gl)*.12))}
+html.glass :is(#toast,#otaBar,#actT){-webkit-backdrop-filter:blur(calc(var(--gl)*20px)) saturate(1.5);backdrop-filter:blur(calc(var(--gl)*20px)) saturate(1.5);
+  border:1px solid rgba(255,255,255,calc(.15 + var(--gl)*.25))}
+html.glass #toast{background:rgba(18,36,40,calc(.92 - var(--gl)*.3))}
+
+@media (prefers-color-scheme:dark){
+  html.glass body::before{background:
+   radial-gradient(60% 38% at 12% 8%,rgba(18,160,182,calc(var(--gl)*.30)),transparent 70%),
+   radial-gradient(55% 34% at 95% 42%,rgba(124,92,230,calc(var(--gl)*.24)),transparent 70%),
+   radial-gradient(60% 40% at 15% 96%,rgba(24,196,140,calc(var(--gl)*.20)),transparent 70%)}
+  html.glass :is(.card,.kb>div,.kt,.chips,.empty,#auth .card){background:rgba(24,48,56,calc(.92 - var(--gl)*.48));
+    border-color:rgba(255,255,255,calc(.06 + var(--gl)*.14));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,calc(.06 + var(--gl)*.16)),0 10px 30px rgba(0,0,0,.35)}
+  html.glass .chips button.on{background:rgba(255,255,255,calc(.08 + var(--gl)*.12));box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}
+  html.glass .kr.alt{background:rgba(255,255,255,calc(var(--gl)*.05))}
+  html.glass nav{background:rgba(18,35,40,calc(.92 - var(--gl)*.42));border-color:rgba(255,255,255,calc(.08 + var(--gl)*.14));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,calc(.08 + var(--gl)*.16)),0 14px 36px rgba(0,0,0,.5)}
+  html.glass nav button.on{background:rgba(95,208,230,calc(.10 + var(--gl)*.08))}
+  html.glass :is(input,select){background:rgba(14,27,31,calc(.9 - var(--gl)*.3));border-color:rgba(255,255,255,.1)}
+  html.glass .sheet{background:rgba(18,35,40,calc(.96 - var(--gl)*.34));border-top-color:rgba(255,255,255,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 -14px 44px #0008}
+  html.glass .btn.s{background:rgba(95,208,230,calc(.10 + var(--gl)*.08))}
+  html.glass .lnk{background:rgba(95,208,230,calc(.10 + var(--gl)*.08));color:var(--p)}
+}

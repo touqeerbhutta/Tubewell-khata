@@ -8,6 +8,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#08505d">
+<script>(function(){try{var g=JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":60}'),h=document.documentElement;h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}catch(e){}})()</script>
 <title>Tubewell Khata</title>
 <script src="supabase.js"></script>
 <style>
@@ -619,7 +620,7 @@ function decorate(){
     const d=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
     m.insertAdjacentHTML('afterbegin',`<div class="greet">Assalam o Alaikum${gname()} 👋<small>${d}</small></div>`);
   }
-  const h=m.querySelector('.hero'); if(!h||h.querySelector('.bar')) return;
+  const h=m.querySelector('.hero'); return;
   let tot=0,jm=0;
   if(view==='khata') customers.forEach(c=>{tot+=cs(c).m;jm+=ps(c).jama});
   else if(view==='detail'&&flt==='all'){const c=customers.find(x=>x.id===cid);if(!c)return;tot=cs(c).m;jm=ps(c).jama}
@@ -700,6 +701,7 @@ async function drawKhata(c){
     }
     g.p.forEach(z=>{
       if(z.applied) bal-=z.amount;
+      if(z.applied) return;
       rows.push({d:sd(d),t:['Jama pesay'+(z.applied?'':' (abhi minus nahi)')],h:'',a:(z.applied?'- ':'')+rs(z.amount),b:rs(bal),k:'p'});
     });
   });
@@ -728,8 +730,8 @@ async function drawKhata(c){
   };
   box(P,240,'Total pani',dur(k.ms),'');
   box(P+520,240,'Total paise (hisaab)',rs(k.m),k.o>0?'purana '+rs(k.o):'');
-  box(P,364,'Jama pesay',rs(q.jama),q.pp>0?rs(q.pp)+' minus nahi':'');
-  box(P+520,364,'Baqaya',rs(q.bq),dur(q.bms)+' pani',true);
+  box(P,364,q.pp>0?'Jama (abhi minus nahi)':'Baqaya pani',q.pp>0?rs(q.pp):dur(q.bms),'');
+  box(P+520,364,'Baqaya',rs(q.bq),q.pp>0?dur(q.bms)+' pani':'',true);
   let y=TY;
   x.fillStyle='#0b5d6b'; x.fillRect(P,y,1000,50);
   x.fillStyle='#fff'; x.font='bold 22px '+FONT;
@@ -926,7 +928,7 @@ function decorate(){
     const d=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
     m.insertAdjacentHTML('afterbegin',`<div class="greet">Assalam o Alaikum${gname()} 👋<small>${d}</small></div>`);
   }
-  const h=m.querySelector('.hero'); if(!h||h.querySelector('.bar')) return;
+  const h=m.querySelector('.hero'); return;
   let tot=0,jm=0,key=view;
   if(view==='khata') customers.forEach(c=>{tot+=cs(c).m;jm+=ps(c).jama});
   else if(view==='detail'&&flt==='all'){const c=customers.find(x=>x.id===cid);if(!c)return;tot=cs(c).m;jm=ps(c).jama;key+=cid}
@@ -1277,15 +1279,16 @@ function rDetail(){
     return `<div class="kr pay${alt}" data-p="${r.z.id}"><div>${sd(r.d)}</div><div>Jama pesay${r.z.applied?'':'<br><span class="mu">(abhi minus nahi)</span>'}</div><div></div><div><b>${r.z.applied?'- ':''}${num(r.z.amount)}</b></div><div>${num(r.b)}</div></div>`;
   };
   const opn=(all&&k.o>0)?`<div class="kr opn" id="opn"><div></div><div>Pehle ka hisaab<br><span class="mu">(purani book)</span></div><div></div><div><b>${num(k.o)}</b></div><div>${num(k.o)}</div></div>`:'';
-  const body=(asc?opn:'')+ord.map(row).join('')+(asc?'':opn);
+  const shown=ord.filter(r=>!(r.k==='p'&&r.z.applied));
+  const body=(asc?opn:'')+shown.map(row).join('')+(asc?'':opn);
   let h=`<div class="hero dhero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rate Rs ${c.rate} per ghanta &middot; ${today}</small></div></div>
   <div class="ktop"><span class="klbl">Baqaya</span></div>
   <div class="big"><span class="cur">Rs</span>${Math.round(q.bq).toLocaleString('en-IN')}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Baqaya pani</span><b>${dur(q.bms)}</b></div></div>
-  <div class="kb">
+  <div class="kb${q.pp>0?'':' kb2'}">
   <div><small>Total pani</small><b>${dur(k.ms)}</b></div>
   <div><small>Hisaab</small><b>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
-  <div><small>Jama</small><b>${rs(q.jama)}</b>${q.pp>0?`<i>${rs(q.pp)} minus nahi</i>`:''}</div></div>
+  ${q.pp>0?`<div class="pend"><small>Jama (minus nahi)</small><b>${rs(q.pp)}</b></div>`:''}</div>
   <button class="btn" id="payBtn" style="margin:0 0 12px">+ Pesay jama karein</button>
   ${q.pp>0?`<button class="btn s" id="applyAll" style="margin:0 0 12px">Jama pesay ab minus karein (${rs(q.pp)})</button>`:''}
   <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>
@@ -1549,6 +1552,21 @@ $('#pSave').onclick=()=>{
   const isNew=!payEdit, n0=payments.length;
   _psv();
   if(isNew&&payments.length>n0){const z=payments[payments.length-1]; actToast('Jama save ho gaya','Rasid banayein',()=>openReceipt(z),9000)}
+};
+
+/* ---- Liquid Glass (Setting mein on/off + intensity) ---- */
+function glassGet(){try{return JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":60}')}catch(e){return{on:true,v:60}}}
+function glassSet(g){localStorage.setItem('tk_glass',JSON.stringify(g));const h=document.documentElement;h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}
+const _rsGl=rSettings;
+rSettings=function(){
+  _rsGl();
+  const g=glassGet();
+  $('#main').insertAdjacentHTML('afterbegin',`<div class="card" id="glCard"><b>Liquid Glass</b><div class="mu">Sheesha jaisa look (iOS style)</div>
+  <div class="chips" style="margin-top:10px"><button data-gl="1" class="${g.on?'on':''}">On</button><button data-gl="0" class="${g.on?'':'on'}">Off</button></div>
+  <div id="glRow" style="${g.on?'':'opacity:.45;pointer-events:none'}"><label style="display:flex;justify-content:space-between"><span>Intensity</span><span id="glV">${g.v}%</span></label>
+  <input type="range" id="glR" min="10" max="100" step="5" value="${g.v}"></div></div>`);
+  document.querySelectorAll('[data-gl]').forEach(b=>b.onclick=()=>{const o=glassGet();o.on=b.dataset.gl==='1';glassSet(o);rSettings()});
+  $('#glR').oninput=e=>{const o=glassGet();o.v=+e.target.value;$('#glV').textContent=o.v+'%';glassSet(o)};
 };
 
 boot();
