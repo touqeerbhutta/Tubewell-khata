@@ -8,7 +8,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#08505d">
-<script>(function(){try{var g=JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":60}'),h=document.documentElement;h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}catch(e){}})()</script>
+<script>(function(){var h=document.documentElement;try{var m=navigator.deviceMemory,c=navigator.hardwareConcurrency;if((m&&m<=2)||(c&&c<=4))h.classList.add('lite')}catch(e){}try{var g=JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":80}');h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}catch(e){}})()</script>
 <title>Tubewell Khata</title>
 <script src="supabase.js"></script>
 <style>
@@ -291,11 +291,14 @@ const sb=supabase.createClient(SB_URL,SB_KEY);
 const $=s=>document.querySelector(s), p2=n=>String(n).padStart(2,'0');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const ymd=d=>d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate());
-const tm=iso=>new Date(iso).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+const _tf=new Intl.DateTimeFormat([], {hour:'numeric',minute:'2-digit'});
+const tm=iso=>_tf.format(new Date(iso));
 const fd=d=>new Date(d+'T00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
 const dur=t=>{const m=Math.round(t/60000);return Math.floor(m/60)+' ghanta '+p2(m%60)+' min'};
-const rs=n=>'Rs '+Math.round(n).toLocaleString('en-IN');
-const ms=e=>new Date(e.end_at)-new Date(e.start_at);
+const _nf=new Intl.NumberFormat('en-IN');
+const rs=n=>'Rs '+_nf.format(Math.round(n));
+const _msC=new WeakMap();
+const ms=e=>{const k=e.start_at+'|'+e.end_at,c=_msC.get(e);if(c&&c.k===k)return c.m;const m=new Date(e.end_at)-new Date(e.start_at);_msC.set(e,{k,m});return m};
 const amt=e=>e.amount!=null?Math.round(e.amount):Math.round(ms(e)/3600000*e.rate);
 const disc=e=>e.amount!=null&&Math.round(e.amount)!==Math.round(ms(e)/3600000*e.rate);
 const sum=l=>l.reduce((a,e)=>{a.ms+=ms(e);a.m+=amt(e);return a},{ms:0,m:0});
@@ -308,7 +311,13 @@ const uid=()=>crypto.randomUUID?crypto.randomUUID():'xxxxxxxx-xxxx-4xxx-yxxx-xxx
 const LS='tk_data';
 let manual=false,payEdit=null;
 let customers=[],entries=[],payments=[],Q=[],view='khata',cid=null,flt='all',day=ymd(new Date()),editId=null,custEdit=null,flushing=false,ch=null;
-const cs=c=>{const s=sum(entries.filter(e=>e.customer_id===c.id)),o=+c.opening||0;return{ms:s.ms,n:s.m,o,m:s.m+o}};
+let _inR=false,_grpE=null,_csM=null;
+const grpE=()=>{if(!_grpE){_grpE=new Map();entries.forEach(e=>{let a=_grpE.get(e.customer_id);if(!a)_grpE.set(e.customer_id,a=[]);a.push(e)})}return _grpE};
+const cs=c=>{
+  if(_inR&&_csM.has(c.id)) return _csM.get(c.id);
+  const s=sum(_inR?(grpE().get(c.id)||[]):entries.filter(e=>e.customer_id===c.id)),o=+c.opening||0;
+  const r={ms:s.ms,n:s.m,o,m:s.m+o}; if(_inR) _csM.set(c.id,r); return r;
+};
 
 function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;setTimeout(()=>e.hidden=true,2600)}
 function setStat(){const s=$('#stat'),off=!navigator.onLine;s.textContent=(off?'Offline':'Online')+(Q.length?' · '+Q.length+' baqi':'');s.className='stat '+(off?'off':Q.length?'wait':'on')}
@@ -425,7 +434,7 @@ function rDaily(){
   const n=list.length;
   $('#main').innerHTML=`<input type="date" id="day" value="${day}" style="margin-bottom:14px">
   <div class="hero"><div class="ktop"><span class="klbl">Is din ka hisaab</span><span class="kchip">${n} ${n===1?'entry':'entries'}</span></div>
-  <div class="big"><span class="cur">Rs</span>${Math.round(s.m).toLocaleString('en-IN')}</div>
+  <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(s.m))}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Total waqt</span><b>${dur(s.ms)}</b></div></div>`+
   (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${tm(e.end_at)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
   $('#day').onchange=ev=>{day=ev.target.value||ymd(new Date());rDaily()};
@@ -681,7 +690,8 @@ $('#cmS').onclick=()=>{
 const rrect=(x,a,b,w,h,r)=>{x.beginPath();x.moveTo(a+r,b);x.arcTo(a+w,b,a+w,b+h,r);x.arcTo(a+w,b+h,a,b+h,r);x.arcTo(a,b+h,a,b,r);x.arcTo(a,b,a+w,b,r);x.closePath()};
 const fitTxt=(x,t,m)=>{if(x.measureText(t).width<=m)return t;while(t.length>1&&x.measureText(t+'…').width>m)t=t.slice(0,-1);return t+'…'};
 const hh=t=>{const m=Math.round(t/60000);return Math.floor(m/60)+':'+p2(m%60)};
-const sd=d=>new Date(d+'T00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'2-digit'});
+const _sf=new Intl.DateTimeFormat('en-GB',{day:'numeric',month:'short',year:'2-digit'});
+const sd=d=>_sf.format(new Date(d+'T00:00'));
 const loadImg=src=>new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.onerror=()=>r(null);i.src=src});
 
 async function drawKhata(c){
@@ -807,7 +817,7 @@ function rKhata(){
   const n=customers.length;
   let h=`<div class="hero khero">
   <div class="ktop"><span class="klbl">Kul baqaya</span><span class="kchip">${n} ${n===1?'banda':'bande'}</span></div>
-  <div class="big"><span class="cur">Rs</span>${Math.round(tq).toLocaleString('en-IN')}</div>
+  <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(tq))}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Kul waqt</span><b>${dur(tms)}</b></div></div>
   <div class="sec"><h2>Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
   h+=n?customers.map(c=>{const k=cs(c),q=ps(c),clr=q.bq>0?'':' clr';
@@ -1254,7 +1264,7 @@ render=function(){
 
 /* ---- khate ka screen: tasveer jaisa jadwal ---- */
 document.head.insertAdjacentHTML('beforeend','<style>.kb{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}.kb>div{background:var(--soft);border-radius:16px;padding:12px;min-width:0}.kb small{display:block;font-size:11px;color:var(--mu);font-weight:600}.kb b{display:block;font-size:16.5px;margin-top:3px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.kb i{display:block;font-style:normal;font-size:11px;color:var(--mu);margin-top:2px}.kb .hl{background:linear-gradient(135deg,#0a5f6e,#0f8aa0)}.kb .hl small,.kb .hl i{color:#d4eef3}.kb .hl b{color:#fff}.kt{background:var(--card);border-radius:18px;overflow:hidden;box-shadow:var(--sh);margin-bottom:12px}.kr{display:grid;grid-template-columns:58px 1fr 42px 62px 68px;gap:4px;padding:9px 10px;font-size:11.5px;line-height:1.25;align-items:start;border-bottom:1px solid var(--ln);font-variant-numeric:tabular-nums}.kr>:nth-child(n+3){text-align:right}.kr.kh{background:#0a5f6e;color:#fff;font-weight:700;font-size:11px;border:0}.kr.alt{background:rgba(10,95,110,.045)}.kr.pay{color:var(--ok);cursor:pointer}.kr.opn{color:var(--mu);cursor:pointer}.kr.tot{background:var(--soft);color:var(--p);font-weight:800;font-size:12.5px;border:0;padding:12px 10px}.rg{padding:5px 0;border-radius:6px}.rg:active,.kr.pay:active,.kr.opn:active{background:var(--soft)}.kr .mu{font-size:10.5px}</style>');
-const num=n=>Math.round(n).toLocaleString('en-IN');
+const num=n=>_nf.format(Math.round(n));
 
 function rDetail(){
   const c=customers.find(x=>x.id===cid);
@@ -1283,7 +1293,7 @@ function rDetail(){
   const body=(asc?opn:'')+shown.map(row).join('')+(asc?'':opn);
   let h=`<div class="hero dhero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rate Rs ${c.rate} per ghanta &middot; ${today}</small></div></div>
   <div class="ktop"><span class="klbl">Baqaya</span></div>
-  <div class="big"><span class="cur">Rs</span>${Math.round(q.bq).toLocaleString('en-IN')}</div>
+  <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(q.bq))}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Baqaya pani</span><b>${dur(q.bms)}</b></div></div>
   <div class="kb${q.pp>0?'':' kb2'}">
   <div><small>Total pani</small><b>${dur(k.ms)}</b></div>
@@ -1555,7 +1565,7 @@ $('#pSave').onclick=()=>{
 };
 
 /* ---- Liquid Glass (Setting mein on/off + intensity) ---- */
-function glassGet(){try{return JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":60}')}catch(e){return{on:true,v:60}}}
+function glassGet(){try{return JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":80}')}catch(e){return{on:true,v:80}}}
 function glassSet(g){localStorage.setItem('tk_glass',JSON.stringify(g));const h=document.documentElement;h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}
 const _rsGl=rSettings;
 rSettings=function(){
@@ -1568,6 +1578,10 @@ rSettings=function(){
   document.querySelectorAll('[data-gl]').forEach(b=>b.onclick=()=>{const o=glassGet();o.on=b.dataset.gl==='1';glassSet(o);rSettings()});
   $('#glR').oninput=e=>{const o=glassGet();o.v=+e.target.value;$('#glV').textContent=o.v+'%';glassSet(o)};
 };
+
+/* ---- speed: ek render ke dauran hisaab ek hi baar nikalta ha ---- */
+const _rFast=render;
+render=function(){_inR=true;_grpE=null;_csM=new Map();try{_rFast()}finally{_inR=false;_grpE=null;_csM=null}};
 
 boot();
 </script>
