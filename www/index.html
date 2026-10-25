@@ -604,7 +604,7 @@ if(AppP) AppP.addListener('backButton',()=>{
   const reset=()=>{const m=el();m.style.transition='';m.style.transform='';m.style.opacity=''};
   document.addEventListener('touchstart',e=>{
     const anyModal=[...document.querySelectorAll('.modal')].some(m=>!m.hidden);
-    if($('#app').hidden||view==='khata'||anyModal||e.touches.length!==1||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){on=false;return}
+    if($('#app').hidden||view==='khata'||view==='detail'||anyModal||e.touches.length!==1||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){on=false;return}
     sx=e.touches[0].clientX; sy=e.touches[0].clientY; dx=0; on=true; lock=false;
   },{passive:true});
   document.addEventListener('touchmove',e=>{
@@ -1190,6 +1190,134 @@ setTimeout(()=>otaCheck(false),4000);
 setInterval(()=>otaCheck(false),30*60000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)otaCheck(false)});
 window.addEventListener('online',()=>setTimeout(()=>otaCheck(false),1500));
+
+/* ---- Telegram jaisi slide (asli do layers, bina copy) ---- */
+document.head.insertAdjacentHTML('beforeend','<style>#pg2{position:fixed;left:0;right:0;bottom:0;z-index:4;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:44px;background:var(--bg);touch-action:pan-y;box-shadow:-8px 0 22px #00000038}#pgdim{position:fixed;left:0;right:0;bottom:0;z-index:3;background:#000;opacity:0;pointer-events:none}body.noblur nav{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--card)!important}</style>');
+$('#app').insertAdjacentHTML('beforeend','<div id="pgdim" hidden></div><main id="pg2" hidden></main>');
+const pgDim=$('#pgdim'), PGE='cubic-bezier(.22,1,.36,1)', PGD=300;
+let pgOpen=false, pgBusy=false, pgBase=0, pgTok=0, inPg=false;
+
+function pgChrome(){
+  $('#back').hidden=true;
+  $('#ttl').textContent=view==='settings'?'Setting':'Tubewell Khata';
+  const s=$('#sub'); if(s) s.classList.remove('off');
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===view));
+}
+function pgReset(){
+  pgTok++;
+  const p=$('#pg2'), m=$('#main');
+  p.hidden=true; p.innerHTML=''; p.style.transform=''; p.style.willChange=''; p.style.overflowY='';
+  p.getAnimations().forEach(a=>a.cancel());
+  m.getAnimations().forEach(a=>a.cancel()); m.style.transform=''; m.style.willChange='';
+  pgDim.hidden=true; pgDim.style.opacity='0'; pgDim.getAnimations().forEach(a=>a.cancel());
+  document.body.classList.remove('noblur');
+  pgOpen=false; pgBusy=false;
+}
+function openPg(){
+  const tok=++pgTok, p=$('#pg2'), m=$('#main');
+  pgBase=window.scrollY;
+  const top=($('header').getBoundingClientRect().bottom-26)+'px';
+  p.style.top=top; pgDim.style.top=top;
+  p.hidden=false; pgDim.hidden=false; pgOpen=true; pgBusy=true;
+  document.body.classList.add('noblur'); p.style.willChange='transform'; m.style.willChange='transform';
+  const o={duration:PGD,easing:PGE,fill:'forwards'};
+  p.animate([{transform:'translateX(100%)'},{transform:'translateX(0)'}],o);
+  m.animate([{transform:'translateX(0)'},{transform:'translateX(-24%)'}],o);
+  pgDim.animate([{opacity:0},{opacity:.25}],o);
+  queueMicrotask(()=>window.scrollTo(0,pgBase));
+  setTimeout(()=>{
+    if(tok!==pgTok) return;
+    p.getAnimations().forEach(a=>a.cancel()); m.getAnimations().forEach(a=>a.cancel()); pgDim.getAnimations().forEach(a=>a.cancel());
+    p.style.transform=''; p.style.willChange=''; m.style.transform='translateX(-24%)'; pgDim.style.opacity='.25';
+    document.body.classList.remove('noblur'); pgBusy=false;
+  },PGD+40);
+}
+function closePg(from,dur){
+  const tok=++pgTok, p=$('#pg2'), m=$('#main'), W=innerWidth, d=dur||PGD, pr=Math.min(1,from/W);
+  pgOpen=false; pgBusy=true; pgChrome();
+  document.body.classList.add('noblur'); p.style.willChange='transform'; m.style.willChange='transform';
+  const o={duration:d,easing:PGE,fill:'forwards'};
+  p.animate([{transform:'translateX('+from+'px)'},{transform:'translateX(100%)'}],o);
+  m.animate([{transform:'translateX('+(-24*(1-pr))+'%)'},{transform:'translateX(0)'}],o);
+  pgDim.animate([{opacity:.25*(1-pr)},{opacity:0}],o);
+  queueMicrotask(()=>window.scrollTo(0,pgBase));
+  setTimeout(()=>{
+    if(tok!==pgTok) return;
+    pgReset();
+    if(view==='detail') return render();
+    _r8(); $('#main').getAnimations().forEach(a=>a.cancel());
+    window.scrollTo(0,pgBase);
+  },d+40);
+}
+const _r8=render;
+render=function(){
+  if(inPg) return;
+  if(view==='detail'){
+    if(pgBusy&&!pgOpen) return;
+    const p=$('#pg2'), m=$('#main'), st=p.scrollTop;
+    inPg=true; m.id='mainBase'; p.id='main'; p.animate=()=>({});
+    try{_r8()}finally{delete p.animate;p.id='pg2';m.id='main';inPg=false}
+    p.scrollTop=st;
+    if(view!=='detail') return render();
+    if(!pgOpen) openPg();
+    return;
+  }
+  if(pgOpen||pgBusy){
+    if($('#app').hidden){pgReset();_r8();return}
+    if(pgOpen) closePg(0,PGD);
+    return;
+  }
+  _r8();
+};
+
+(function(){
+  let sx=0,sy=0,dx=0,on=false,lock=false,W=0,vx=0,lx=0,lt=0;
+  const modalOpen=()=>[...document.querySelectorAll('.modal')].some(m=>!m.hidden);
+  document.addEventListener('touchstart',e=>{
+    if(!pgOpen||pgBusy||modalOpen()||e.touches.length!==1||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){on=false;return}
+    const t=e.touches[0]; sx=lx=t.clientX; sy=t.clientY; lt=performance.now(); vx=0; dx=0; on=true; lock=false;
+  },{passive:true});
+  document.addEventListener('touchmove',e=>{
+    if(!on) return;
+    const t=e.touches[0], x=t.clientX-sx, y=t.clientY-sy;
+    if(!lock){
+      if(Math.abs(y)>Math.abs(x)&&Math.abs(y)>10){on=false;return}
+      if(x>10&&x>Math.abs(y)*1.3){
+        lock=true; W=innerWidth; document.body.classList.add('noblur');
+        $('#pg2').style.willChange='transform'; $('#main').style.willChange='transform'; $('#pg2').style.overflowY='hidden';
+      }else return;
+    }
+    dx=Math.max(0,x);
+    const now=performance.now(); vx=(t.clientX-lx)/Math.max(1,now-lt); lx=t.clientX; lt=now;
+    const pr=Math.min(1,dx/W);
+    $('#pg2').style.transform='translateX('+dx+'px)';
+    $('#main').style.transform='translateX('+(-24*(1-pr))+'%)';
+    pgDim.style.opacity=String(.25*(1-pr));
+  },{passive:true});
+  const end=()=>{
+    if(!on) return; on=false;
+    if(!lock) return; lock=false;
+    const p=$('#pg2'), m=$('#main');
+    p.style.overflowY='';
+    if(dx>W*0.33||vx>0.5){
+      view='khata'; closePg(dx,Math.round(140+180*Math.max(0,1-dx/W)));
+    }else{
+      const tok=++pgTok, pr=Math.min(1,dx/W); pgBusy=true;
+      const o={duration:260,easing:PGE,fill:'forwards'};
+      p.animate([{transform:'translateX('+dx+'px)'},{transform:'translateX(0)'}],o);
+      m.animate([{transform:'translateX('+(-24*(1-pr))+'%)'},{transform:'translateX(-24%)'}],o);
+      pgDim.animate([{opacity:.25*(1-pr)},{opacity:.25}],o);
+      setTimeout(()=>{
+        if(tok!==pgTok) return;
+        p.getAnimations().forEach(a=>a.cancel()); m.getAnimations().forEach(a=>a.cancel()); pgDim.getAnimations().forEach(a=>a.cancel());
+        p.style.transform=''; p.style.willChange=''; m.style.transform='translateX(-24%)'; pgDim.style.opacity='.25';
+        document.body.classList.remove('noblur'); pgBusy=false;
+      },300);
+    }
+  };
+  document.addEventListener('touchend',end,{passive:true});
+  document.addEventListener('touchcancel',end,{passive:true});
+})();
 
 boot();
 </script>
