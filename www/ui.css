@@ -1,0 +1,126 @@
+/* =====================================================================
+   Tubewell Khata - design layer (ye file sabse aakhir mein load hoti ha)
+   1 Tokens  2 Base  3 Header  4 Hero  5 Cards/List  6 Detail  7 Forms/Buttons
+   8 Nav/FAB  9 Sheets/Toast  10 Dark mode
+   ===================================================================== */
+
+/* 1 ---- Tokens ---- */
+:root{
+  --p:#0a5f6e;--p2:#0f8aa0;--soft:#e3f0f3;--bg:#eef3f5;--card:#fff;
+  --ink:#0f2327;--mu:#667a80;--ln:#e2eaec;--ok:#16794a;--red:#c0392b;
+  --r-lg:24px;--r-md:18px;--r-sm:14px;
+  --sh:0 1px 2px #0b2a3010,0 8px 24px #0b2a3012;
+  --grad:linear-gradient(140deg,#073f49 0%,#0a6272 52%,#12a0b6 100%);
+}
+
+/* 2 ---- Base ---- */
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:.1px;-webkit-font-smoothing:antialiased}
+main{padding:16px 16px 190px}
+b,.big,.amt{font-variant-numeric:tabular-nums}
+.mu{color:var(--mu)}
+
+/* 3 ---- Header ---- */
+header{background:var(--grad);border-radius:0 0 28px 28px;padding-bottom:16px;box-shadow:0 10px 28px #0a5f6e40}
+header h1{font-size:18px;font-weight:800;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sub{font-size:11px;font-weight:600;letter-spacing:1.6px;opacity:.78;text-transform:uppercase}
+header button#bOut{background:#ffffff1f;border:1px solid #ffffff2b;border-radius:14px;padding:7px 12px;font-weight:700;font-size:14px;opacity:1}
+.stat,.stat.off,.stat.wait{background:#ffffff1f;border:1px solid #ffffff2b;font-weight:700;font-size:11.5px;padding:5px 9px}
+.greet{font-size:22px;font-weight:800;letter-spacing:-.3px;margin:6px 4px 16px}
+.greet small{font-size:13px;font-weight:500}
+
+/* 4 ---- Hero card (home / detail / rozana) ---- */
+.hero{position:relative;overflow:hidden;background:var(--grad);border-radius:var(--r-lg);padding:20px;margin-bottom:18px;
+  box-shadow:0 16px 34px #0a5f6e45,inset 0 1px 0 #ffffff26}
+.hero::before{content:'';position:absolute;right:-60px;top:-70px;width:230px;height:230px;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%,#ffffff2e,#ffffff08 70%)}
+.hero::after{content:'';position:absolute;left:-50px;bottom:-90px;width:200px;height:200px;border-radius:50%;background:#ffffff0c}
+.hero>*{position:relative;z-index:1}
+.ktop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.klbl{font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;opacity:.82}
+.kchip{background:#ffffff26;border:1px solid #ffffff30;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;backdrop-filter:blur(6px)}
+.hero .big{display:flex;align-items:baseline;gap:8px;margin:12px 0 16px;font-size:44px;line-height:1.05;font-weight:800;letter-spacing:-1px}
+.hero .cur{font-size:18px;font-weight:700;opacity:.78;letter-spacing:.4px}
+.kfoot{display:flex;align-items:center;gap:8px;border-top:1px solid #ffffff2b;padding-top:13px;font-size:13px}
+.kfoot svg{opacity:.8;flex:none}
+.kfoot span{opacity:.82}
+.kfoot b{margin-left:auto;font-weight:700}
+.hhead{margin-bottom:16px}
+.hhead b{font-size:19px;font-weight:800}
+.hhead small{opacity:.8;font-size:12.5px}
+.dhero .ktop{margin-top:2px}
+.bar{height:6px;background:#ffffff2e;margin-top:14px}
+.bl{font-size:12px;opacity:.88;margin-top:7px;font-weight:600}
+
+/* 5 ---- Section titles, cards, list ---- */
+.sec{margin:22px 4px 12px}
+.sec h2{font-size:12px;font-weight:800;letter-spacing:1.1px;color:var(--mu)}
+.lnk{background:var(--soft);color:var(--p);font-weight:700;padding:9px 15px;border-radius:20px;border:0}
+.card{border-radius:var(--r-md);padding:14px 16px;box-shadow:var(--sh);margin-bottom:10px;border:1px solid #0b2a3008}
+.card.row{gap:12px}
+.card[data-c],.card[data-e]{cursor:pointer}
+.card[data-c]:active,.card[data-e]:active{transform:scale(.985);background:var(--soft)}
+.av{width:46px;height:46px;font-size:18px;box-shadow:0 0 0 3px var(--card),0 6px 14px #0a5f6e30}
+.cn{display:block;font-size:16px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm{display:flex;flex-wrap:wrap;gap:1px 10px;margin-top:3px;font-size:12.5px}
+.cm span{white-space:nowrap}
+.amt{font-size:16px;font-weight:800;white-space:nowrap}
+.amt.clr{color:var(--ok)}
+.end{gap:8px}
+.chev{color:#a3b3b8;font-size:22px}
+.empty{border-radius:var(--r-md);padding:38px 14px;color:var(--mu)}
+
+/* 6 ---- Detail screen: tiles, chips, table ---- */
+.kb{grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+.kb>div{background:var(--card);border-radius:var(--r-sm);padding:12px 10px;box-shadow:var(--sh);border:1px solid #0b2a3008}
+.kb small{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
+.kb b{font-size:14.5px;font-weight:800;color:var(--ink);margin-top:5px}
+.kb i{font-size:10.5px}
+.chips{background:#dde8eb;border-radius:16px;padding:4px;gap:3px;margin:6px 0 4px}
+.chips button{border-radius:12px;font-weight:700;font-size:13.5px}
+.chips .on{background:var(--card);color:var(--p);box-shadow:0 2px 8px #0b2a3018}
+.kt{border-radius:var(--r-md);box-shadow:var(--sh);border:1px solid #0b2a3008}
+.kr{padding:10px 10px;border-bottom:1px solid var(--ln)}
+.kr.kh{background:linear-gradient(135deg,#0a5f6e,#0d7589);font-size:10.5px;letter-spacing:0;text-transform:none}
+.kr.alt{background:#0a5f6e0a}
+.kr.tot{background:var(--soft);color:var(--p)}
+.two2{gap:8px;margin-top:24px}
+
+/* 7 ---- Forms and buttons ---- */
+.btn{background:linear-gradient(135deg,#0a5f6e,#0f8aa0);border-radius:var(--r-sm);padding:15px;font-weight:700;letter-spacing:.2px;box-shadow:0 10px 20px #0a5f6e30}
+.btn.s{background:var(--soft);color:var(--p);box-shadow:none}
+.btn.d{background:#fdecea;color:var(--red);box-shadow:none}
+input,select{background:var(--card);border:1.5px solid var(--ln);border-radius:var(--r-sm);padding:14px;font-size:16px;color:var(--ink)}
+input:focus,select:focus{border-color:var(--p2);box-shadow:0 0 0 4px #0f8aa022;outline:0}
+label{font-size:11px;font-weight:800;letter-spacing:.7px;text-transform:uppercase;color:var(--mu)}
+.prev{background:linear-gradient(135deg,var(--soft),#d3eaef);color:var(--p);border-radius:var(--r-sm)}
+
+/* 8 ---- Bottom nav + FAB ---- */
+nav{left:16px;right:16px;bottom:calc(12px + env(safe-area-inset-bottom));border:1px solid #0b2a3010;border-radius:28px;
+  background:#ffffffeb;backdrop-filter:blur(16px);box-shadow:0 12px 32px #0a2a3033;padding:6px;gap:6px}
+nav button{border-radius:22px;padding:9px;font-weight:700;font-size:11.5px;letter-spacing:.2px}
+nav button.on{background:var(--soft);color:var(--p)}
+.fab{bottom:calc(96px + env(safe-area-inset-bottom));right:18px;border-radius:22px;padding:15px 22px;font-weight:800;
+  background:linear-gradient(135deg,#0a5f6e,#12a0b6);box-shadow:0 14px 28px #0a5f6e55;letter-spacing:.2px}
+
+/* 9 ---- Sheets and toast ---- */
+.sheet{border-radius:30px 30px 0 0;padding:30px 18px calc(18px + env(safe-area-inset-bottom))}
+.sheet h3{font-size:20px;font-weight:800;letter-spacing:-.2px}
+#toast{border-radius:16px;box-shadow:0 12px 30px #0005;font-weight:600}
+#auth .card{border-radius:var(--r-lg);padding:26px 22px}
+
+/* 10 ---- Dark mode ---- */
+@media (prefers-color-scheme:dark){
+  :root{--p:#5fd0e6;--p2:#2aa6c0;--soft:#1b3238;--bg:#0a1315;--card:#122328;--ink:#e8f3f5;--mu:#8fa8ae;--ln:#223a41;--ok:#4cc27d;
+    --sh:0 1px 2px #0008,0 8px 22px #0006;--grad:linear-gradient(140deg,#06323b 0%,#0a5262 55%,#0e7f93 100%)}
+  .card,.kb>div,.kt{border-color:#ffffff0d}
+  nav{background:#122328ee;border-color:#ffffff12}
+  .chips{background:#0e1b1f}
+  .chips .on{background:var(--soft)}
+  .kr.alt{background:#ffffff08}
+  .kr.kh{background:#0e5a68}
+  .chev{color:#58727a}
+  .btn.s{color:var(--p)}
+  .btn.d{background:#3a1f1c;color:#ff8a7d}
+  input,select{background:#0e1b1f}
+  .prev{background:linear-gradient(135deg,#1b3238,#1f3d46)}
+}

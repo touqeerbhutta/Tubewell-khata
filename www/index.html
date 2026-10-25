@@ -1,8 +1,13 @@
 <!DOCTYPE html>
+<!--
+  TUBEWELL KHATA  --  www/index.html (logic + markup)   www/ui.css (poora design, sabse aakhir mein load hota ha)
+  Screens: rKhata (home) / rDetail (banday ka khata) / rDaily (rozana) / rSettings
+  Naya look chahiye to sirf ui.css badlein.
+-->
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b5d6b">
+<meta name="theme-color" content="#08505d">
 <title>Tubewell Khata</title>
 <script src="supabase.js"></script>
 <style>
@@ -126,22 +131,6 @@ nav button.on{background:var(--soft);color:var(--p)}
 #auth::after{content:'';position:absolute;width:240px;height:240px;border-radius:50%;background:#ffffff0e;bottom:-70px;left:-80px}
 #auth .card{position:relative;z-index:1;border-radius:28px;padding:28px 24px;box-shadow:0 20px 50px #0006}
 .logo{width:68px;height:68px;font-size:32px;background:linear-gradient(135deg,#e4f1f3,#c7e6ec);box-shadow:0 6px 16px #0a5f6e33}
-/* ---- professional hero + bande list ---- */
-.khero{padding:20px 20px 18px}
-.ktop{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.klbl{font-size:12px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;opacity:.82}
-.kchip{background:#ffffff26;border:1px solid #ffffff2e;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700}
-.khero .big{display:flex;align-items:baseline;gap:8px;margin:14px 0 16px;font-size:44px;line-height:1.05}
-.khero .cur{font-size:18px;font-weight:700;opacity:.8;letter-spacing:.5px}
-.kfoot{display:flex;align-items:center;gap:8px;border-top:1px solid #ffffff26;padding-top:13px;font-size:13px}
-.kfoot svg{opacity:.8;flex:none}
-.kfoot span{opacity:.82}
-.kfoot b{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
-.cn{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cm{display:flex;flex-wrap:wrap;gap:1px 10px;margin-top:3px;font-size:12.5px}
-.cm span{white-space:nowrap}
-.amt{font-size:17px;font-weight:800;white-space:nowrap}
-.amt.clr{color:var(--ok)}
 @media (prefers-color-scheme:dark){
 :root{--p:#5fd0e6;--p2:#2aa6c0;--soft:#1b3238;--bg:#0b1517;--card:#13242a;--ink:#e8f3f5;--mu:#8ea6ac;--ln:#243a41;--ok:#4cc27d;--sh:0 1px 2px #0006}
 body{background:radial-gradient(900px 400px at 100% -10%,#12333b 0,transparent 60%),var(--bg)}
@@ -424,56 +413,20 @@ function render(){
 const go=v=>{view=v;render();scrollTo(0,0)};
 const bindE=()=>document.querySelectorAll('[data-e]').forEach(el=>el.onclick=()=>openForm(entries.find(x=>x.id===el.dataset.e)));
 
-function rKhata(){
-  const t=sum(entries), tot=t.m+customers.reduce((a,c)=>a+(+c.opening||0),0);
-  let h=`<div class="hero"><small>Kul hisaab (sab bande)</small><div class="big">${rs(tot)}</div><div class="hrow"><span>${dur(t.ms)}</span><span>${customers.length} bande</span></div></div>
-  <div class="sec"><h2>Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
-  h+=customers.length?customers.map(c=>{const k=cs(c);
-    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><div class="mu">${dur(k.ms)} &middot; Rs ${c.rate}/ghanta</div></div><div class="end"><b>${rs(k.m)}</b><span class="chev">›</span></div></div>`}).join('')
-    :'<div class="empty">Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.</div>';
-  $('#main').innerHTML=h;
-  $('#addC').onclick=()=>openCust(null);
-  document.querySelectorAll('[data-c]').forEach(el=>el.onclick=()=>{cid=el.dataset.c;flt='all';go('detail')});
-}
-
 function inFlt(e){
   const d=new Date(e.start_at),n=new Date();
   if(flt==='today') return ymd(d)===ymd(n);
   if(flt==='month') return d.getFullYear()===n.getFullYear()&&d.getMonth()===n.getMonth();
   return true;
 }
-function rDetail(){
-  const c=customers.find(x=>x.id===cid);
-  if(!c){view='khata';return render()}
-  const k=cs(c), list=entries.filter(e=>e.customer_id===cid&&inFlt(e)), s=sum(list), groups={}, all=flt==='all';
-  list.forEach(e=>{const d=ymd(new Date(e.start_at));(groups[d]=groups[d]||[]).push(e)});
-  let h=`<div class="hero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rs ${c.rate} per ghanta</small></div></div>
-  <div class="two"><div><small>Total pani</small><b>${dur(s.ms)}</b></div><div><small>Total paise</small><b>${rs(all?k.m:s.m)}</b></div></div>
-  ${all&&k.o>0?`<small style="margin-top:10px">Pehle ka ${rs(k.o)} + naya ${rs(k.n)}</small>`:''}</div>
-  <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>`;
-  const keys=Object.keys(groups).sort().reverse();
-  h+=keys.length?keys.map(d=>{
-    const g=groups[d].slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), gs=sum(g);
-    return `<div class="day"><span>${fd(d)}</span><span>${dur(gs.ms)} &middot; ${rs(gs.m)}</span></div>`+
-    g.map(e=>`<div class="card row" data-e="${e.id}"><div class="grow"><b>${tm(e.start_at)} se ${tm(e.end_at)}</b><div class="mu">${dur(ms(e))} &middot; Rs ${e.rate}/ghanta${disc(e)?' &middot; riyat':''}</div></div><b>${rs(amt(e))}</b></div>`).join('');
-  }).join(''):'<div class="empty">Is muddat mein koi entry nahi.</div>';
-  if(all&&k.o>0) h+=`<div class="day"><span>PURANA HISAAB</span><span></span></div><div class="card row" id="opn"><div class="grow"><b>Pehle ka hisaab</b><div class="mu">Purani book se (tap karke badlein)</div></div><b>${rs(k.o)}</b></div>`;
-  h+=`<div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
-  $('#main').innerHTML=h;
-  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
-  $('#eC').onclick=()=>openCust(c);
-  if($('#opn')) $('#opn').onclick=()=>openCust(c);
-  $('#dC').onclick=()=>{
-    if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?')) return;
-    view='khata'; mut('customers','del',{id:c.id});
-  };
-  bindE();
-}
 function rDaily(){
   const list=entries.filter(e=>ymd(new Date(e.start_at))===day).sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), s=sum(list);
+  const n=list.length;
   $('#main').innerHTML=`<input type="date" id="day" value="${day}" style="margin-bottom:14px">
-  <div class="hero"><div class="two"><div><small>Total waqt</small><b>${dur(s.ms)}</b></div><div><small>Total paise</small><b>${rs(s.m)}</b></div></div></div>`+
-  (list.length?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b>${esc(cn(e.customer_id))}</b><div class="mu">${tm(e.start_at)} se ${tm(e.end_at)} &middot; ${dur(ms(e))}${disc(e)?' &middot; riyat':''}</div></div><b>${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
+  <div class="hero"><div class="ktop"><span class="klbl">Is din ka hisaab</span><span class="kchip">${n} ${n===1?'entry':'entries'}</span></div>
+  <div class="big"><span class="cur">Rs</span>${Math.round(s.m).toLocaleString('en-IN')}</div>
+  <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Total waqt</span><b>${dur(s.ms)}</b></div></div>`+
+  (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${tm(e.end_at)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
   $('#day').onchange=ev=>{day=ev.target.value||ymd(new Date());rDaily()};
   bindE();
 }
@@ -861,50 +814,6 @@ function rKhata(){
   $('#main').innerHTML=h;
   $('#addC').onclick=()=>openCust(null);
   document.querySelectorAll('[data-c]').forEach(el=>el.onclick=()=>{cid=el.dataset.c;flt='all';go('detail')});
-}
-
-function rDetail(){
-  const c=customers.find(x=>x.id===cid);
-  if(!c){view='khata';return render()}
-  const k=cs(c), q=ps(c), all=flt==='all';
-  const list=entries.filter(e=>e.customer_id===cid&&inFlt(e)), s=sum(list);
-  const pl=payments.filter(x=>x.customer_id===cid&&inFlt({start_at:x.paid_at}));
-  const groups={}, G=d=>groups[d]=groups[d]||{e:[],p:[]};
-  list.forEach(e=>G(ymd(new Date(e.start_at))).e.push(e));
-  pl.forEach(x=>G(ymd(new Date(x.paid_at))).p.push(x));
-  let h=`<div class="hero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rs ${c.rate} per ghanta</small></div></div>
-  <div class="two"><div><small>Total pani</small><b>${dur(s.ms)}</b></div><div><small>Total paise</small><b>${rs(all?k.m:s.m)}</b></div></div>
-  ${all?`<div class="two" style="margin-top:10px"><div><small>Jama pesay</small><b>${rs(q.jama)}</b></div><div><small>Baqaya</small><b>${rs(q.bq)}</b><small>${dur(q.bms)} pani</small></div></div>`:''}
-  ${all&&k.o>0?`<small style="margin-top:10px">Pehle ka ${rs(k.o)} + naya ${rs(k.n)}</small>`:''}
-  ${all&&q.pp>0?`<small style="margin-top:6px">${rs(q.pp)} jama hain, abhi minus nahi hue</small>`:''}</div>
-  <button class="btn" id="payBtn" style="margin:0 0 12px">+ Pesay jama karein</button>
-  ${q.pp>0?`<button class="btn s" id="applyAll" style="margin:0 0 12px">Jama pesay ab minus karein (${rs(q.pp)})</button>`:''}
-  <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>`;
-  const keys=Object.keys(groups).sort().reverse();
-  h+=keys.length?keys.map(d=>{
-    const g=groups[d], es=g.e.slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), gs=sum(es);
-    return `<div class="day"><span>${fd(d)}</span><span>${es.length?dur(gs.ms)+' &middot; '+rs(gs.m):''}</span></div>`+
-    es.map(e=>`<div class="card row" data-e="${e.id}"><div class="grow"><b>${tm(e.start_at)} se ${tm(e.end_at)}</b><div class="mu">${dur(ms(e))} &middot; Rs ${e.rate}/ghanta${disc(e)?' &middot; riyat':''}</div></div><b>${rs(amt(e))}</b></div>`).join('')+
-    g.p.map(x=>`<div class="card row" data-p="${x.id}"><div class="grow"><b style="color:#1f7a3d">Jama pesay</b><div class="mu">${x.applied?'Hisaab se minus':'Abhi minus nahi'} &middot; ${dur(x.amount/(x.rate||c.rate||1)*3600000)}</div></div><b style="color:#1f7a3d">+ ${rs(x.amount)}</b></div>`).join('');
-  }).join(''):'<div class="empty">Is muddat mein koi entry nahi.</div>';
-  if(all&&k.o>0) h+=`<div class="day"><span>PURANA HISAAB</span><span></span></div><div class="card row" id="opn"><div class="grow"><b>Pehle ka hisaab</b><div class="mu">Purani book se (tap karke badlein)</div></div><b>${rs(k.o)}</b></div>`;
-  h+=`<div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
-  $('#main').innerHTML=h;
-  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
-  document.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>openPay(payments.find(x=>x.id===el.dataset.p)));
-  $('#payBtn').onclick=()=>openPay(null);
-  if($('#applyAll')) $('#applyAll').onclick=()=>{
-    if(!confirm('Jama pesay hisaab se minus kar dein?')) return;
-    payments.filter(x=>x.customer_id===cid&&!x.applied).forEach(x=>mut('payments','upd',{id:x.id,applied:true}));
-    toast('Minus ho gaye');
-  };
-  $('#eC').onclick=()=>openCust(c);
-  if($('#opn')) $('#opn').onclick=()=>openCust(c);
-  $('#dC').onclick=()=>{
-    if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?')) return;
-    view='khata'; mut('customers','del',{id:c.id});
-  };
-  bindE();
 }
 
 document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="pm" hidden><div class="sheet">
@@ -1369,12 +1278,14 @@ function rDetail(){
   };
   const opn=(all&&k.o>0)?`<div class="kr opn" id="opn"><div></div><div>Pehle ka hisaab<br><span class="mu">(purani book)</span></div><div></div><div><b>${num(k.o)}</b></div><div>${num(k.o)}</div></div>`:'';
   const body=(asc?opn:'')+ord.map(row).join('')+(asc?'':opn);
-  let h=`<div class="hero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rate Rs ${c.rate} per ghanta &middot; ${today}</small></div></div></div>
+  let h=`<div class="hero dhero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rate Rs ${c.rate} per ghanta &middot; ${today}</small></div></div>
+  <div class="ktop"><span class="klbl">Baqaya</span></div>
+  <div class="big"><span class="cur">Rs</span>${Math.round(q.bq).toLocaleString('en-IN')}</div>
+  <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Baqaya pani</span><b>${dur(q.bms)}</b></div></div>
   <div class="kb">
   <div><small>Total pani</small><b>${dur(k.ms)}</b></div>
-  <div><small>Total paise (hisaab)</small><b>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
-  <div><small>Jama pesay</small><b>${rs(q.jama)}</b>${q.pp>0?`<i>${rs(q.pp)} minus nahi</i>`:''}</div>
-  <div class="hl"><small>Baqaya</small><b>${rs(q.bq)}</b><i>${dur(q.bms)} pani</i></div></div>
+  <div><small>Hisaab</small><b>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
+  <div><small>Jama</small><b>${rs(q.jama)}</b>${q.pp>0?`<i>${rs(q.pp)} minus nahi</i>`:''}</div></div>
   <button class="btn" id="payBtn" style="margin:0 0 12px">+ Pesay jama karein</button>
   ${q.pp>0?`<button class="btn s" id="applyAll" style="margin:0 0 12px">Jama pesay ab minus karein (${rs(q.pp)})</button>`:''}
   <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>
@@ -1642,4 +1553,5 @@ $('#pSave').onclick=()=>{
 
 boot();
 </script>
+<link rel="stylesheet" href="ui.css">
 </body></html>
