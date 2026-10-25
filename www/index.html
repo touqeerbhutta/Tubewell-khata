@@ -126,6 +126,22 @@ nav button.on{background:var(--soft);color:var(--p)}
 #auth::after{content:'';position:absolute;width:240px;height:240px;border-radius:50%;background:#ffffff0e;bottom:-70px;left:-80px}
 #auth .card{position:relative;z-index:1;border-radius:28px;padding:28px 24px;box-shadow:0 20px 50px #0006}
 .logo{width:68px;height:68px;font-size:32px;background:linear-gradient(135deg,#e4f1f3,#c7e6ec);box-shadow:0 6px 16px #0a5f6e33}
+/* ---- professional hero + bande list ---- */
+.khero{padding:20px 20px 18px}
+.ktop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.klbl{font-size:12px;font-weight:700;letter-spacing:.9px;text-transform:uppercase;opacity:.82}
+.kchip{background:#ffffff26;border:1px solid #ffffff2e;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700}
+.khero .big{display:flex;align-items:baseline;gap:8px;margin:14px 0 16px;font-size:44px;line-height:1.05}
+.khero .cur{font-size:18px;font-weight:700;opacity:.8;letter-spacing:.5px}
+.kfoot{display:flex;align-items:center;gap:8px;border-top:1px solid #ffffff26;padding-top:13px;font-size:13px}
+.kfoot svg{opacity:.8;flex:none}
+.kfoot span{opacity:.82}
+.kfoot b{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+.cn{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cm{display:flex;flex-wrap:wrap;gap:1px 10px;margin-top:3px;font-size:12.5px}
+.cm span{white-space:nowrap}
+.amt{font-size:17px;font-weight:800;white-space:nowrap}
+.amt.clr{color:var(--ok)}
 @media (prefers-color-scheme:dark){
 :root{--p:#5fd0e6;--p2:#2aa6c0;--soft:#1b3238;--bg:#0b1517;--card:#13242a;--ink:#e8f3f5;--mu:#8ea6ac;--ln:#243a41;--ok:#4cc27d;--sh:0 1px 2px #0006}
 body{background:radial-gradient(900px 400px at 100% -10%,#12333b 0,transparent 60%),var(--bg)}
@@ -192,19 +208,6 @@ main.enter>*:nth-child(n+5){animation-delay:.2s!important}
 <style>#bSign{display:none!important}</style>
 <style>.bar,.bl{display:none!important}</style>
 <style>
-@font-face{font-family:NotoNaskh;src:url(naskh-400.woff2) format('woff2');font-weight:400;font-display:swap}
-@font-face{font-family:NotoNaskh;src:url(naskh-700.woff2) format('woff2');font-weight:700;font-display:swap}
-html.ur body,html.ur input,html.ur select,html.ur button{font-family:NotoNaskh,system-ui,-apple-system,sans-serif}
-html.ur body{line-height:1.75}
-html.ur .big{line-height:1.3}
-html.ur label,html.ur .sec h2,html.ur .day,html.ur #sub,html.ur .sp-m,html.ur .greet small{text-transform:none;letter-spacing:0}
-html.ur .kr{line-height:1.6}
-[dir=rtl] #back{transform:scaleX(-1)}
-[dir=rtl] .chev{display:inline-block;transform:scaleX(-1)}
-[dir=rtl] .end,[dir=rtl] .kr>:nth-child(n+3){text-align:left}
-[dir=rtl] .fab{right:auto;left:20px}
-[dir=rtl] input[type=number],[dir=rtl] input[type=date],[dir=rtl] input[type=time]{direction:ltr;text-align:right}
-[dir=rtl] input[type=text],[dir=rtl] input:not([type]),[dir=rtl] input[type=password]{unicode-bidi:plaintext;text-align:start}
 
 </style>
 </head>
@@ -844,14 +847,16 @@ const ps=c=>{
 };
 
 function rKhata(){
-  let tb=0,tj=0,tq=0,tms=0;
-  customers.forEach(c=>{const k=cs(c),q=ps(c);tb+=k.m;tj+=q.jama;tq+=q.bq;tms+=k.ms});
-  let h=`<div class="hero"><small>Kul baqaya (sab bande)</small><div class="big">${rs(tq)}</div>
-  <div class="hrow"><span>Hisaab ${rs(tb)}</span><span>Jama ${rs(tj)}</span></div>
-  <div class="hrow" style="margin-top:4px"><span>${dur(tms)}</span><span>${customers.length} bande</span></div></div>
+  let tq=0,tms=0;
+  customers.forEach(c=>{const k=cs(c),q=ps(c);tq+=q.bq;tms+=k.ms});
+  const n=customers.length;
+  let h=`<div class="hero khero">
+  <div class="ktop"><span class="klbl">Kul baqaya</span><span class="kchip">${n} ${n===1?'banda':'bande'}</span></div>
+  <div class="big"><span class="cur">Rs</span>${Math.round(tq).toLocaleString('en-IN')}</div>
+  <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Kul waqt</span><b>${dur(tms)}</b></div></div>
   <div class="sec"><h2>Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
-  h+=customers.length?customers.map(c=>{const k=cs(c),q=ps(c);
-    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><div class="mu">${dur(k.ms)} &middot; Hisaab ${rs(k.m)}</div></div><div class="end"><div><b>${rs(q.bq)}</b><div class="mu">baqaya</div></div><span class="chev">›</span></div></div>`}).join('')
+  h+=n?customers.map(c=>{const k=cs(c),q=ps(c),clr=q.bq>0?'':' clr';
+    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span></div></div><div class="end"><b class="amt${clr}">${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`}).join('')
     :'<div class="empty">Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.</div>';
   $('#main').innerHTML=h;
   $('#addC').onclick=()=>openCust(null);
@@ -1634,258 +1639,6 @@ $('#pSave').onclick=()=>{
   _psv();
   if(isNew&&payments.length>n0){const z=payments[payments.length-1]; actToast('Jama save ho gaya','Rasid banayein',()=>openReceipt(z),9000)}
 };
-
-/* ---- Urdu script ---- */
-const URT=`Tubewell Khata|ٹیوب ویل کھاتہ
-Made by Touqeer|تیار کردہ: توقیر
-Pani ka hisaab, ab aasaan|پانی کا حساب، اب آسان
-Login karein|لاگ اِن کریں
-Username|یوزر نیم
-Password (kam az kam 6 harf)|پاس ورڈ (کم از کم 6 حروف)
-Login|لاگ اِن
-Logout|لاگ آؤٹ
-Khate|کھاتے
-Rozana|روزانہ
-Setting|سیٹنگ
-Account|اکاؤنٹ
-+ Nayi entry|+ نئی انٹری
-Nayi entry|نئی انٹری
-Entry theek karein|انٹری درست کریں
-Banda|بندہ
-Tarikh|تاریخ
-Kab chalai|کب چلائی
-Kab band ki|کب بند کی
-Rate (Rs per ghanta)|ریٹ (روپے فی گھنٹہ)
-Paise (riyat ke liye khud badal sakte hain)|رقم (رعایت کے لیے خود بدل سکتے ہیں)
-Save karein|محفوظ کریں
-Delete karein|ڈیلیٹ کریں
-Band karein|بند کریں
-Naya banda|نیا بندہ
-Banda theek karein|بندہ درست کریں
-Naam|نام
-Pehle ka hisaab (Rs, purani book se)|پہلے کا حساب (روپے، پرانی کتاب سے)
-Photo (zaroori nahi)|تصویر (ضروری نہیں)
-Photo chunein|تصویر چنیں
-Hatayen|ہٹائیں
-Kul baqaya (sab bande)|کل بقایا (تمام بندے)
-Bandon ke khate|بندوں کے کھاتے
-+ Naya banda|+ نیا بندہ
-Abhi koi banda nahi.|ابھی کوئی بندہ نہیں۔
-Upar "+ Naya banda" dabayen.|اوپر "+ نیا بندہ" دبائیں۔
-baqaya|بقایا
-Baqaya|بقایا
-Total pani|کل پانی
-Total paise (hisaab)|کل رقم (حساب)
-Total paise|کل رقم
-Total waqt|کل وقت
-Total|کل
-Kul|کل
-Jama pesay|جمع شدہ پیسے
-+ Pesay jama karein|+ پیسے جمع کریں
-Sab|سب
-Is mahine|اس مہینے
-Aaj|آج
-Hisaab|حساب
-Naye pehle ⇅|نئے پہلے ⇅
-Purane pehle ⇅|پرانے پہلے ⇅
-Tafseel|تفصیل
-Ghantay|گھنٹے
-Rakam|رقم
-(abhi minus nahi)|(ابھی منہا نہیں)
-Pehle ka hisaab|پہلے کا حساب
-(purani book)|(پرانی کتاب)
-Pehle ka hisaab (purani book)|پہلے کا حساب (پرانی کتاب)
-Is muddat mein koi entry nahi.|اس مدت میں کوئی انٹری نہیں۔
-Is din ki koi entry nahi.|اس دن کی کوئی انٹری نہیں۔
-Naam / rate / purana hisaab badlein|نام / ریٹ / پرانا حساب تبدیل کریں
-Banda hatayen|بندہ ہٹائیں
-Pesay jama karein|پیسے جمع کریں
-Jama pesay theek karein|جمع شدہ پیسے درست کریں
-Rakam (Rs)|رقم (روپے)
-Hisaab se minus karein (pani ke ghantay kam hon)|حساب سے منہا کریں (پانی کے گھنٹے کم ہوں)
-Rasid banayein|رسید بنائیں
-Rasid|رسید
-Khata ki tasveer|کھاتے کی تصویر
-Khata ki tasveer banayen|کھاتے کی تصویر بنائیں
-Tasveer ban rahi hai...|تصویر بن رہی ہے...
-Rasid ban rahi hai...|رسید بن رہی ہے...
-Tayyar hai. Neeche "Share / Save karein" dabayen.|تیار ہے۔ نیچے "شیئر / محفوظ کریں" دبائیں۔
-Share / Save karein|شیئر / محفوظ کریں
-Apna naam|اپنا نام
-Ye naam app mein salam ke saath dikhega.|یہ نام ایپ میں سلام کے ساتھ دکھائی دے گا۔
-Naam save karein|نام محفوظ کریں
-Password badlein|پاس ورڈ تبدیل کریں
-Maujooda password|موجودہ پاس ورڈ
-Naya password (kam az kam 6 harf)|نیا پاس ورڈ (کم از کم 6 حروف)
-Naya password dobara|نیا پاس ورڈ دوبارہ
-Login username badlein|لاگ اِن یوزر نیم تبدیل کریں
-Abhi:|ابھی:
-. Naye username se login hoga.|۔ نئے یوزر نیم سے لاگ اِن ہوگا۔
-Naya username|نیا یوزر نیم
-Password (tasdeeq ke liye)|پاس ورڈ (تصدیق کے لیے)
-Username badlein|یوزر نیم تبدیل کریں
-Aap ki id jin phones par login hai.|آپ کی آئی ڈی جن فونز پر لاگ اِن ہے۔
-Load ho raha hai...|لوڈ ہو رہا ہے...
-Abhi online|ابھی آن لائن
-(ye mobile)|(یہ موبائل)
-Logout ho raha hai...|لاگ آؤٹ ہو رہا ہے...
-Abhi koi record nahi|ابھی کوئی ریکارڈ نہیں
-Baqi sab mobiles se pakka logout|باقی تمام موبائلز سے پکا لاگ آؤٹ
-Is mobile ka naam|اس موبائل کا نام
-Naya update mil gaya|نیا اپڈیٹ مل گیا
-Update karein|اپڈیٹ کریں
-Lag raha hai...|لگ رہا ہے...
-Dobara koshish|دوبارہ کوشش
-App update|ایپ اپڈیٹ
-Version check ho raha hai...|ورژن چیک ہو رہا ہے...
-Update check karein|اپڈیٹ چیک کریں
-APK wala (asli)|APK والا (اصلی)
-Backup aur Excel|بیک اپ اور ایکسل
-Abhi tak koi backup nahi banaya.|ابھی تک کوئی بیک اپ نہیں بنایا۔
-Backup file banayein (share)|بیک اپ فائل بنائیں (شیئر)
-Excel (CSV) hisaab file|ایکسل (CSV) حساب فائل
-Backup se wapas lao|بیک اپ سے واپس لائیں
-Delete ki hui cheezein 30 din tak yahan rehti hain (is mobile par).|ڈیلیٹ کی ہوئی چیزیں 30 دن تک یہاں رہتی ہیں (اس موبائل پر)۔
-Bin khali hai|بن خالی ہے
-Wapas lao|واپس لائیں
-Entry|انٹری
-Jama entry|جمع انٹری
-Wasool hue|وصول ہوئے
-RASID|رسید
-Hisaab se minus ho gaya|حساب سے منہا ہو گیا
-Sirf jama (abhi minus nahi)|صرف جمع (ابھی منہا نہیں)
-Rasid number|رسید نمبر
-Is jama se pehle baqaya|اس جمع سے پہلے بقایا
-Is jama ke baad baqaya|اس جمع کے بعد بقایا
-Is jama ke barabar pani|اس جمع کے برابر پانی
-Wasool karne wale|وصول کرنے والے
-Shukriya|شکریہ
-Username likhein, password kam az kam 6 harf|یوزر نیم لکھیں، پاس ورڈ کم از کم 6 حروف کا ہو
-Pehle banda add karein|پہلے بندہ شامل کریں
-Sab cheezein bharein|سب چیزیں بھریں
-Save ho gaya|محفوظ ہو گیا
-Jama save ho gaya|جمع محفوظ ہو گیا
-Naam aur rate likhein|نام اور ریٹ لکھیں
-Rakam likhein|رقم لکھیں
-Banda add ho gaya|بندہ شامل ہو گیا
-Badal gaya (purani entries ka rate nahi badla)|تبدیل ہو گیا (پرانی انٹریوں کا ریٹ نہیں بدلا)
-Photo nahi khuli|تصویر نہیں کھلی
-Internet chahiye|انٹرنیٹ چاہیے
-Naam badal gaya|نام تبدیل ہو گیا
-Naya password kam az kam 6 harf|نیا پاس ورڈ کم از کم 6 حروف
-Dono naye password barabar nahi|دونوں نئے پاس ورڈ برابر نہیں
-Dobara login karein|دوبارہ لاگ اِن کریں
-Maujooda password ghalat hai|موجودہ پاس ورڈ غلط ہے
-Password badal gaya|پاس ورڈ تبدیل ہو گیا
-Username 3 se 30 harf: a-z, 0-9, . aur _|یوزر نیم 3 سے 30 حروف: a-z, 0-9, . اور _
-Ye pehle se wahi username hai|یہ پہلے سے وہی یوزر نیم ہے
-Password ghalat hai|پاس ورڈ غلط ہے
-Ye username pehle se maujood hai|یہ یوزر نیم پہلے سے موجود ہے
-Is mobile ko logout karein?|اس موبائل کو لاگ آؤٹ کریں؟
-Logout ka hukm bhej diya|لاگ آؤٹ کا حکم بھیج دیا
-Naam likhein|نام لکھیں
-Naam save ho gaya|نام محفوظ ہو گیا
-Baqi sab mobiles foran logout ho jayenge. Pakka?|باقی تمام موبائل فوراً لاگ آؤٹ ہو جائیں گے۔ پکا؟
-Baqi sab mobiles logout|باقی تمام موبائل لاگ آؤٹ
-Is mobile ko doosre mobile se logout kar diya gaya|اس موبائل کو دوسرے موبائل سے لاگ آؤٹ کر دیا گیا
-Is bande ka sara hisaab bhi delete ho jayega. Pakka?|اس بندے کا سارا حساب بھی ڈیلیٹ ہو جائے گا۔ پکا؟
-Ye entry delete karein?|یہ انٹری ڈیلیٹ کریں؟
-Ye jama entry delete karein?|یہ جمع انٹری ڈیلیٹ کریں؟
-Jama pesay hisaab se minus kar dein?|جمع شدہ پیسے حساب سے منہا کر دیں؟
-Minus ho gaye|منہا ہو گئے
-Wapas aa gaya|واپس آ گیا
-Hamesha ke liye hata dein?|ہمیشہ کے لیے ہٹا دیں؟
-File sahi nahi hai|فائل درست نہیں ہے
-Ye Tubewell Khata ki backup file nahi hai|یہ ٹیوب ویل کھاتہ کی بیک اپ فائل نہیں ہے
-Is backup ka sab kuch pehle se maujood hai|اس بیک اپ کا سب کچھ پہلے سے موجود ہے
-Wapas lag raha hai...|واپس لگ رہا ہے...
-Ye banda pehle se maujood hai|یہ بندہ پہلے سے موجود ہے
-Pehle us banday ko wapas lao|پہلے اس بندے کو واپس لائیں
-Ye pehle hi wapas ho chuka hai|یہ پہلے ہی واپس ہو چکا ہے
-Download shuru|ڈاؤن لوڈ شروع
-Update sirf APK app mein chalta hai|اپڈیٹ صرف APK ایپ میں چلتا ہے`;
-const UR={}; URT.split('\n').forEach(l=>{const i=l.indexOf('|');if(i>0)UR[l.slice(0,i)]=l.slice(i+1)});
-const MO={Jan:'جنوری',Feb:'فروری',Mar:'مارچ',Apr:'اپریل',May:'مئی',Jun:'جون',Jul:'جولائی',Aug:'اگست',Sep:'ستمبر',Sept:'ستمبر',Oct:'اکتوبر',Nov:'نومبر',Dec:'دسمبر',January:'جنوری',February:'فروری',March:'مارچ',April:'اپریل',June:'جون',July:'جولائی',August:'اگست',September:'ستمبر',October:'اکتوبر',November:'نومبر',December:'دسمبر'};
-const WD={Sun:'اتوار',Mon:'پیر',Tue:'منگل',Wed:'بدھ',Thu:'جمعرات',Fri:'جمعہ',Sat:'ہفتہ',Sunday:'اتوار',Monday:'پیر',Tuesday:'منگل',Wednesday:'بدھ',Thursday:'جمعرات',Friday:'جمعہ',Saturday:'ہفتہ'};
-const URP=[
- [/(\d+) ghanta (\d+) min/g,'$1 گھنٹے $2 منٹ'],
- [/(\d+) min pehle/g,'$1 منٹ پہلے'],[/(\d+) ghante pehle/g,'$1 گھنٹے پہلے'],[/(\d+) din pehle/g,'$1 دن پہلے'],
- [/(\d+) baqi\b/g,'$1 باقی'],[/(\d+) bande\b/g,'$1 بندے'],[/(\d+) entries\b/g,'$1 انٹریاں'],[/(\d+) entry\b/g,'$1 انٹری'],
- [/^Online/,'آن لائن'],[/^Offline/,'آف لائن'],
- [/(\d{1,2}:\d{2})\s?(am|pm)\b/gi,(m,a,b)=>a+' '+(/a/i.test(b)?'صبح':'شام')],
- [/(\d|صبح|شام) se (?=\d)/g,'$1 سے '],
- [/Rs\s?(-?[\d,]+(?:\.\d+)?)/g,'$1 روپے'],
- [/(\d{1,2}) ([A-Z][a-z]{2,8})\b/g,(m,d,mo)=>MO[mo]?d+' '+MO[mo]:m],
- [/\b(Sun|Mon|Tue|Wed|Thu|Fri|Sat|Sunday|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday)\b(?=,? \d)/g,m=>WD[m]],
- [/\(abhi minus nahi hongay\)/g,'(ابھی منہا نہیں ہوں گے)'],[/\(abhi minus nahi\)/g,'(ابھی منہا نہیں)'],
- [/\bminus hongay\b/g,'منہا ہوں گے'],[/\bminus nahi\b/g,'منہا نہیں'],
- [/\briyat\b/g,'رعایت'],[/\bJama pesay\b/g,'جمع شدہ پیسے'],[/\bHisaab\b/g,'حساب'],[/\bJama\b/g,'جمع'],[/\bjama\b/g,'جمع'],
- [/\bpurana\b/g,'پرانا'],[/\b[Bb]aqaya\b/g,'بقایا'],[/\bpani\b/g,'پانی'],
- [/per ghanta/g,'فی گھنٹہ'],[/\/ghanta/g,'/گھنٹہ'],[/\bRate\b(?= \d)/g,'ریٹ'],
- [/^Assalam o Alaikum/,'السلام علیکم'],[/Assalam o Alaikum/g,'السلام علیکم'],
- [/Aakhri baar /g,'آخری بار '],[/Aakhri backup: /g,'آخری بیک اپ: '],[/ delete hui\b/g,' ڈیلیٹ ہوئی'],
- [/^Login: /,'لاگ اِن: '],[/^Login mobiles/,'لاگ اِن موبائل'],[/^Recycle bin/,'ری سائیکل بن'],[/^Version: /,'ورژن: '],
- [/^App naya hai \(version /,'ایپ نئی ہے (ورژن '],
- [/^Jama pesay ab minus karein/,'جمع شدہ پیسے اب منہا کریں'],
- [/^(.*) delete ho gayi$/,(m,a)=>(UR[a]||a.replace(/^Banda /,'بندہ '))+' ڈیلیٹ ہو گئی'],
- [/Wapas lagayen\?/,'واپس لگائیں؟'],[/Jo pehle se hain wo nahi badlenge\./,'جو پہلے سے ہیں وہ نہیں بدلیں گے۔'],
- [/Tubewell Khata app se banayi gayi/,'ٹیوب ویل کھاتہ ایپ سے بنائی گئی'],[/Tubewell Khata app se/,'ٹیوب ویل کھاتہ ایپ سے'],[/Ghantay = ghanta:minute/,'گھنٹے = گھنٹہ:منٹ']
-];
-let urOn=localStorage.getItem('tk_lang')==='ur';
-function trT(s){
-  const t=s.trim(); if(!t) return s;
-  if(UR[t]) return s.replace(t,UR[t]);
-  let r=s; for(const [re,to] of URP) r=r.replace(re,to);
-  return r;
-}
-function trNode(n){
-  if(!urOn) return;
-  const t=n.nodeValue; if(!t||n.__u===t||!/[A-Za-z0-9]/.test(t)) return;
-  const r=trT(t); if(r!==t){n.__o=t;n.nodeValue=r;n.__u=r}
-}
-function textNodes(root){
-  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{const p=n.parentNode&&n.parentNode.nodeName;return(p==='SCRIPT'||p==='STYLE'||p==='TEXTAREA'||p==='OPTION')?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT}});
-  const a=[]; while(w.nextNode()) a.push(w.currentNode); return a;
-}
-const trTree=root=>textNodes(root).forEach(trNode);
-function untrTree(root){textNodes(root).forEach(n=>{if(n.__u!==undefined&&n.__u===n.nodeValue){n.nodeValue=n.__o;n.__u=undefined}})}
-new MutationObserver(list=>{
-  if(!urOn) return;
-  list.forEach(m=>{
-    if(m.type==='characterData') trNode(m.target);
-    else m.addedNodes.forEach(n=>{if(n.nodeType===3) trNode(n); else if(n.nodeType===1) trTree(n)});
-  });
-}).observe(document.body,{childList:true,subtree:true,characterData:true});
-function applyLang(){
-  const h=document.documentElement;
-  h.dir=urOn?'rtl':'ltr'; h.lang=urOn?'ur':'en'; h.classList.toggle('ur',urOn);
-  if(urOn) trTree(document.body); else untrTree(document.body);
-}
-function setLang(u){urOn=u;localStorage.setItem('tk_lang',u?'ur':'ro');applyLang();render()}
-
-const _cf=window.confirm.bind(window), _al=window.alert.bind(window);
-window.confirm=m=>_cf(urOn?trT(String(m)):m);
-window.alert=m=>_al(urOn?trT(String(m)):m);
-const _ft=CanvasRenderingContext2D.prototype.fillText, _mt=CanvasRenderingContext2D.prototype.measureText;
-CanvasRenderingContext2D.prototype.fillText=function(t,a,b,c){
-  if(urOn){t=trT(String(t));this.direction='rtl'}else this.direction='ltr';
-  return _ft.call(this,t,a,b,c);
-};
-CanvasRenderingContext2D.prototype.measureText=function(t){
-  if(urOn){t=trT(String(t));this.direction='rtl'}else this.direction='ltr';
-  return _mt.call(this,t);
-};
-
-const _rs11=rSettings;
-rSettings=function(){
-  _rs11();
-  const h=$('#main .hero');
-  (h||$('#main')).insertAdjacentHTML(h?'afterend':'afterbegin',`<div class="card"><b>Zaban / زبان</b><div class="mu">App ki zaban chunein · ایپ کی زبان چنیں</div><div class="g2" style="margin-top:10px"><button class="btn ${urOn?'s':''}" id="lgR" style="margin:0">Roman Urdu</button><button class="btn ${urOn?'':'s'}" id="lgU" style="margin:0">اردو</button></div></div>`);
-  $('#lgR').onclick=()=>setLang(false); $('#lgU').onclick=()=>setLang(true);
-};
-const _r11=render;
-render=function(){_r11(); if(urOn) trTree(document.body)};
-if(urOn) applyLang();
 
 boot();
 </script>
