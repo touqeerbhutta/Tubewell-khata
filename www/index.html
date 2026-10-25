@@ -1380,6 +1380,244 @@ function rDetail(){
   bindE();
 }
 
+/* ---- backup, rasid, recycle bin ---- */
+document.head.insertAdjacentHTML('beforeend','<style>#actT{position:fixed;left:16px;right:16px;bottom:calc(100px + env(safe-area-inset-bottom));z-index:70;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#102226;color:#fff;padding:12px 14px;border-radius:16px;box-shadow:0 10px 28px #0006;font-weight:600}#actT button{background:#fff;color:#0a5f6e;border:0;border-radius:11px;padding:8px 14px;font-weight:700;width:auto;margin:0}#actT.in{animation:actin .3s cubic-bezier(.22,1,.36,1)}@keyframes actin{from{transform:translateY(20px);opacity:0}}</style>');
+document.body.insertAdjacentHTML('beforeend','<div id="actT" hidden><span></span><button></button></div>');
+let actTimer=0;
+function actToast(msg,label,fn,ms){
+  const e=$('#actT'), b=e.querySelector('button');
+  e.firstChild.textContent=msg; b.textContent=label;
+  b.onclick=()=>{e.hidden=true;clearTimeout(actTimer);fn()};
+  e.hidden=false; e.classList.remove('in'); void e.offsetWidth; e.classList.add('in');
+  clearTimeout(actTimer); actTimer=setTimeout(()=>{e.hidden=true},ms||7000);
+}
+
+/* tez sync: ek saath 100 rows */
+async function flush(){
+  if(flushing||!Q.length) return; flushing=true;
+  try{
+    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
+    while(Q.length){
+      const f=Q[0]; let n=1, r;
+      if(f.op==='ins'){
+        while(n<100&&Q[n]&&Q[n].op==='ins'&&Q[n].t===f.t) n++;
+        r=await sb.from(f.t).upsert(Q.slice(0,n).map(x=>x.row));
+        if(r.error&&!isNet(r.error)&&n>1){
+          for(let i=0;i<n;i++){
+            const q=await sb.from(f.t).upsert(Q[i].row);
+            if(q.error&&isNet(q.error)){r=q;break}
+            if(q.error) toast('Sync masla: '+q.error.message);
+          }
+          if(!(r.error&&isNet(r.error))) r={error:null};
+        }
+      }else if(f.op==='upd'){const {id,...rest}=f.row; r=await sb.from(f.t).update(rest).eq('id',id)}
+      else r=await sb.from(f.t).delete().eq('id',f.row.id);
+      if(r.error){ if(isNet(r.error)) break; toast('Sync masla: '+r.error.message) }
+      Q.splice(0,n); saveLocal(); setStat();
+    }
+  }catch(e){}finally{flushing=false;setStat()}
+}
+function bulkIns(t,rows){
+  const arr=t==='customers'?customers:t==='payments'?payments:entries, ids=new Set(arr.map(x=>x.id));
+  rows.forEach(r=>{if(!ids.has(r.id)){arr.push(r);ids.add(r.id)}Q.push({t,op:'ins',row:r})});
+}
+function finishBulk(){customers.sort(byName);saveLocal();render();flush()}
+
+/* ---- recycle bin ---- */
+const TK='tk_trash', TTL=30*864e5;
+const trashGet=()=>{try{return JSON.parse(localStorage.getItem(TK)||'[]').filter(x=>Date.now()-x.at<TTL)}catch(e){return[]}};
+const trashSet=a=>{try{localStorage.setItem(TK,JSON.stringify(a))}catch(e){try{localStorage.setItem(TK,JSON.stringify(a.slice(-20)))}catch(e2){}}};
+function trashAdd(t,row){
+  let it=null;
+  if(t==='entries'){const e=entries.find(x=>x.id===row.id); if(e) it={k:'e',row:e,cn:cn(e.customer_id),label:'Entry'}}
+  else if(t==='payments'){const p=payments.find(x=>x.id===row.id); if(p) it={k:'p',row:p,cn:cn(p.customer_id),label:'Jama entry'}}
+  else if(t==='customers'){const c=customers.find(x=>x.id===row.id); if(c) it={k:'c',row:c,es:entries.filter(x=>x.customer_id===c.id),ps:payments.filter(x=>x.customer_id===c.id),label:'Banda '+c.name}}
+  if(!it) return null;
+  it.id=uid(); it.at=Date.now();
+  const a=trashGet(); a.push(JSON.parse(JSON.stringify(it))); trashSet(a); return it;
+}
+function trashRestore(id){
+  const a=trashGet(), it=a.find(x=>x.id===id);
+  if(!it) return toast('Ye pehle hi wapas ho chuka hai');
+  if(it.k==='c'){
+    if(customers.some(x=>x.id===it.row.id)) return toast('Ye banda pehle se maujood hai');
+    bulkIns('customers',[it.row]); bulkIns('entries',it.es); bulkIns('payments',it.ps);
+  }else{
+    if(!customers.some(x=>x.id===it.row.customer_id)) return toast('Pehle us banday ko wapas lao');
+    bulkIns(it.k==='e'?'entries':'payments',[it.row]);
+  }
+  trashSet(a.filter(x=>x.id!==id)); finishBulk(); toast('Wapas aa gaya');
+}
+const _mut10=mut;
+mut=function(t,op,row){
+  if(op==='del'){
+    const it=trashAdd(t,row); _mut10(t,op,row);
+    if(it) actToast(it.label+' delete ho gayi','Wapas lao',()=>trashRestore(it.id),8000);
+    return;
+  }
+  return _mut10(t,op,row);
+};
+function paintTrash(){
+  const box=$('#trList'); if(!box) return;
+  const a=trashGet().slice().reverse();
+  $('#trT').textContent='Recycle bin ('+a.length+')';
+  box.innerHTML=a.length?a.map(it=>{
+    let d;
+    if(it.k==='e') d=esc(it.cn||'')+' &middot; '+sd(ymd(new Date(it.row.start_at)))+' '+tm(it.row.start_at)+'–'+tm(it.row.end_at)+' &middot; '+rs(amt(it.row));
+    else if(it.k==='p') d=esc(it.cn||'')+' &middot; Jama '+rs(it.row.amount)+' &middot; '+sd(ymd(new Date(it.row.paid_at)));
+    else d=esc(it.row.name)+' &middot; '+it.es.length+' entries, '+it.ps.length+' jama';
+    return `<div class="row" style="padding:10px 0;border-top:1px solid var(--ln)"><div class="grow"><b>${it.k==='e'?'Entry':it.k==='p'?'Jama entry':'Banda'}</b><div class="mu">${d}</div><div class="mu">${agoTxt(Date.now()-it.at)} delete hui</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="btn s" style="width:auto;margin:0;padding:8px 12px" data-tr="${it.id}">Wapas lao</button><button class="btn d" style="width:auto;margin:0;padding:8px 12px" data-tx="${it.id}">Hatayen</button></div></div>`}).join('')
+    :'<div class="mu" style="padding-top:8px">Bin khali hai</div>';
+  box.querySelectorAll('[data-tr]').forEach(b=>b.onclick=()=>{trashRestore(b.dataset.tr);paintTrash()});
+  box.querySelectorAll('[data-tx]').forEach(b=>b.onclick=()=>{if(!confirm('Hamesha ke liye hata dein?'))return;trashSet(trashGet().filter(x=>x.id!==b.dataset.tx));paintTrash()});
+}
+
+/* ---- backup aur Excel ---- */
+async function shareText(name,text,mime){
+  const P=(window.Capacitor&&Capacitor.Plugins)||{}, F=P.Filesystem, S=P.Share;
+  if(!F||!S){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:mime}));a.download=name;a.click();toast('Download shuru');return}
+  const r=await F.writeFile({path:name,data:text,directory:'CACHE',encoding:'utf8'});
+  await S.share({title:name,files:[r.uri]});
+}
+const failMsg=e=>/cancel/i.test((e&&e.message)||'')?null:((e&&e.message)||String(e));
+async function doBackup(){
+  try{
+    await shareText('tubewell-backup-'+ymd(new Date())+'.json',JSON.stringify({app:'tubewell-khata',v:1,at:new Date().toISOString(),customers,entries,payments}),'application/json');
+    localStorage.setItem('tk_lastbk',String(Date.now())); paintBk();
+  }catch(e){const m=failMsg(e); if(m) toast('Backup nahi hua: '+m)}
+}
+const csvq=v=>{v=String(v==null?'':v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+async function doCsv(){
+  const it=[];
+  entries.forEach(e=>it.push({n:cn(e.customer_id),t:new Date(e.start_at),r:[cn(e.customer_id),ymd(new Date(e.start_at)),'Entry',tm(e.start_at),tm(e.end_at),hh(ms(e)),e.rate,amt(e),'']}));
+  payments.forEach(z=>it.push({n:cn(z.customer_id),t:new Date(z.paid_at),r:[cn(z.customer_id),ymd(new Date(z.paid_at)),'Jama','','','',z.rate||'',z.amount,z.applied?'Haan':'Nahi']}));
+  it.sort((a,b)=>a.n.localeCompare(b.n)||a.t-b.t);
+  const rows=[['Banda','Tarikh','Qism','Kab chalai','Kab band ki','Ghantay','Rate','Rakam (Rs)','Hisaab se minus'],...it.map(x=>x.r),[],['KHULASA'],['Banda','Total ghantay','Total hisaab (Rs)','Jama (Rs)','Baqaya (Rs)']];
+  customers.forEach(c=>{const k=cs(c),q=ps(c);rows.push([c.name,hh(k.ms),Math.round(k.m),Math.round(q.jama),Math.round(q.bq)])});
+  try{await shareText('tubewell-hisaab-'+ymd(new Date())+'.csv','\ufeff'+rows.map(r=>r.map(csvq).join(',')).join('\r\n'),'text/csv')}
+  catch(e){const m=failMsg(e); if(m) toast('File nahi bani: '+m)}
+}
+function doRestore(file){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    let d; try{d=JSON.parse(fr.result)}catch(e){return toast('File sahi nahi hai')}
+    if(!d||d.app!=='tubewell-khata'||!Array.isArray(d.customers)) return toast('Ye Tubewell Khata ki backup file nahi hai');
+    const have=a=>new Set(a.map(x=>x.id)), ci=have(customers), ei=have(entries), pi=have(payments);
+    const nc=d.customers.filter(x=>!ci.has(x.id)), all=new Set([...ci,...nc.map(x=>x.id)]);
+    const ne=(d.entries||[]).filter(x=>!ei.has(x.id)&&all.has(x.customer_id)), np=(d.payments||[]).filter(x=>!pi.has(x.id)&&all.has(x.customer_id));
+    if(!nc.length&&!ne.length&&!np.length) return toast('Is backup ka sab kuch pehle se maujood hai');
+    if(!confirm('Wapas lagayen?\n'+nc.length+' bande, '+ne.length+' entries, '+np.length+' jama.\n(Jo pehle se hain wo nahi badlenge.)')) return;
+    bulkIns('customers',nc); bulkIns('entries',ne); bulkIns('payments',np); finishBulk();
+    toast('Wapas lag raha hai...');
+  };
+  fr.readAsText(file);
+}
+function paintBk(){
+  const e=$('#bkInfo'); if(!e) return;
+  const t=+localStorage.getItem('tk_lastbk');
+  e.textContent=t?'Aakhri backup: '+agoTxt(Date.now()-t):'Abhi tak koi backup nahi banaya.';
+}
+const _rs10=rSettings;
+rSettings=function(){
+  _rs10();
+  $('#main').insertAdjacentHTML('beforeend',`<div class="card"><b>Backup aur Excel</b><div class="mu" id="bkInfo"></div>
+  <button class="btn" id="bkB">Backup file banayein (share)</button>
+  <button class="btn s" id="bkX">Excel (CSV) hisaab file</button>
+  <button class="btn s" id="bkR">Backup se wapas lao</button>
+  <input type="file" id="bkF" accept=".json,application/json" hidden></div>
+  <div class="card"><b id="trT">Recycle bin</b><div class="mu">Delete ki hui cheezein 30 din tak yahan rehti hain (is mobile par).</div><div id="trList"></div></div>`);
+  $('#bkB').onclick=doBackup; $('#bkX').onclick=doCsv; $('#bkR').onclick=()=>$('#bkF').click();
+  $('#bkF').onchange=e=>{const f=e.target.files[0];e.target.value='';if(f)doRestore(f)};
+  paintBk(); paintTrash();
+};
+
+/* ---- rasid ---- */
+function balInfo(c,zid){
+  const days={},D=d=>days[d]=days[d]||{e:[],p:[]};
+  entries.filter(e=>e.customer_id===c.id).forEach(e=>D(ymd(new Date(e.start_at))).e.push(e));
+  payments.filter(z=>z.customer_id===c.id).forEach(z=>D(ymd(new Date(z.paid_at))).p.push(z));
+  let bal=+c.opening||0, res=null;
+  Object.keys(days).sort().forEach(d=>{
+    bal+=sum(days[d].e).m;
+    days[d].p.forEach(z=>{const before=bal; if(z.applied) bal-=z.amount; if(z.id===zid) res={before,after:bal}});
+  });
+  return res||{before:0,after:0};
+}
+async function drawReceipt(c,z){
+  const W=1080,H=1440,P=48,F='system-ui,-apple-system,Roboto,sans-serif',S=2;
+  const bi=balInfo(c,z.id), rate=+z.rate||+c.rate||0, who=localStorage.getItem('tk_name')||'';
+  const no='R-'+ymd(new Date(z.paid_at)).replace(/-/g,'')+'-'+String(z.id).slice(0,4).toUpperCase();
+  const dt=new Date(z.paid_at).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const ts=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const cv=document.createElement('canvas'); cv.width=W*S; cv.height=H*S;
+  const x=cv.getContext('2d'); x.scale(S,S);
+  x.fillStyle='#f2f5f7'; x.fillRect(0,0,W,H);
+  const g=x.createLinearGradient(0,0,W,230); g.addColorStop(0,'#08505d'); g.addColorStop(1,'#0f8aa0');
+  x.fillStyle=g; x.fillRect(0,0,W,230);
+  x.textBaseline='alphabetic'; x.fillStyle='#fff'; x.textAlign='left';
+  x.font='bold 44px '+F; x.fillText('Tubewell Khata',P,96);
+  x.globalAlpha=.8; x.font='22px '+F; x.fillText('Made by Touqeer',P,134); x.globalAlpha=1;
+  x.textAlign='right'; x.font='bold 56px '+F; x.fillText('RASID',W-P,100);
+  x.globalAlpha=.85; x.font='22px '+F; x.fillText(no,W-P,138); x.globalAlpha=1;
+  x.save(); x.shadowColor='rgba(10,95,110,.2)'; x.shadowBlur=36; x.shadowOffsetY=12;
+  x.fillStyle='#fff'; rrect(x,P,170,W-2*P,1160,30); x.fill(); x.restore();
+  const cx=P+100, cy=280;
+  x.save(); x.beginPath(); x.arc(cx,cy,60,0,Math.PI*2); x.closePath(); x.clip();
+  const im=c.photo?await loadImg(c.photo):null;
+  if(im) x.drawImage(im,cx-60,cy-60,120,120);
+  else{x.fillStyle=col(c.name);x.fillRect(cx-60,cy-60,120,120);x.fillStyle='#fff';x.font='bold 56px '+F;x.textAlign='center';x.textBaseline='middle';x.fillText((c.name.trim()[0]||'?').toUpperCase(),cx,cy+3)}
+  x.restore(); x.textAlign='left'; x.textBaseline='alphabetic';
+  x.fillStyle='#122428'; x.font='bold 44px '+F; x.fillText(fitTxt(x,c.name,700),cx+90,cy-6);
+  x.fillStyle='#6b7c80'; x.font='26px '+F; x.fillText('Rate Rs '+(rate||c.rate)+' per ghanta',cx+90,cy+36);
+  x.fillStyle='#e1e8ea'; x.fillRect(P+40,390,W-2*P-80,2);
+  x.textAlign='center'; x.fillStyle='#6b7c80'; x.font='28px '+F; x.fillText('Wasool hue',W/2,452);
+  let fs=112; const am=rs(z.amount); x.font='bold '+fs+'px '+F;
+  while(x.measureText(am).width>880&&fs>50){fs-=6;x.font='bold '+fs+'px '+F}
+  x.fillStyle='#1f8a4c'; x.fillText(am,W/2,452+fs+8);
+  const pill=z.applied?'Hisaab se minus ho gaya':'Sirf jama (abhi minus nahi)';
+  x.font='bold 26px '+F; const pw=x.measureText(pill).width+60, py=452+fs+40;
+  x.fillStyle=z.applied?'#e3f4ea':'#fdf0dc'; rrect(x,W/2-pw/2,py,pw,56,28); x.fill();
+  x.fillStyle=z.applied?'#1f8a4c':'#b8741a'; x.fillText(pill,W/2,py+37);
+  const rows=[['Tarikh',dt],['Rasid number',no],['Is jama se pehle baqaya',rs(bi.before)],['Is jama ke baad baqaya',rs(bi.after),true],['Is jama ke barabar pani',rate>0?dur(z.amount/rate*3600000):'-']];
+  let y=740;
+  rows.forEach((r,i)=>{
+    if(r[2]){x.fillStyle='#e6f2f4';rrect(x,P+24,y-8,W-2*P-48,84,18);x.fill()}
+    x.textAlign='left'; x.fillStyle='#6b7c80'; x.font='26px '+F; x.fillText(r[0],P+48,y+46);
+    x.textAlign='right'; x.fillStyle=r[2]?'#0a5f6e':'#122428'; x.font='bold 30px '+F; x.fillText(fitTxt(x,r[1],520),W-P-48,y+46);
+    if(!r[2]&&i<rows.length-1){x.fillStyle='#e8eef0';x.fillRect(P+48,y+76,W-2*P-96,1)}
+    y+=84;
+  });
+  x.textAlign='left'; x.fillStyle='#122428'; x.font='bold 28px '+F; x.fillText(fitTxt(x,who,330),P+48,1236);
+  x.fillStyle='#9fb0b4'; x.fillRect(P+48,1248,330,2);
+  x.fillStyle='#6b7c80'; x.font='22px '+F; x.fillText('Wasool karne wale',P+48,1284);
+  x.textAlign='right'; x.fillStyle='#0a5f6e'; x.font='bold 40px '+F; x.fillText('Shukriya',W-P-48,1264);
+  x.textAlign='center'; x.fillStyle='#8a9ca0'; x.font='22px '+F; x.fillText('Tubewell Khata app se banayi gayi  ·  '+ts,W/2,1388);
+  return cv;
+}
+async function openReceipt(z){
+  const c=customers.find(x=>x.id===z.customer_id); if(!c) return;
+  $('#sm h3').textContent='Rasid'; $('#sm').hidden=false;
+  $('#sMsg').textContent='Rasid ban rahi hai...'; $('#shot').removeAttribute('src');
+  try{
+    const cv=await drawReceipt(c,z); shotURL=cv.toDataURL('image/png');
+    shotName='rasid-'+(c.name.replace(/[^\w]+/g,'-').replace(/^-|-$/g,'')||'banda')+'-'+ymd(new Date(z.paid_at));
+    $('#shot').src=shotURL; $('#sMsg').textContent='Tayyar hai. Neeche "Share / Save karein" dabayen.';
+  }catch(e){$('#sMsg').textContent='Masla: '+(e.message||e)}
+}
+const _os10=openShot;
+openShot=function(c){$('#sm h3').textContent='Khata ki tasveer';return _os10(c)};
+
+$('#pX').insertAdjacentHTML('beforebegin','<button class="btn s" id="pRec" hidden>Rasid banayein</button>');
+$('#pRec').onclick=()=>{const z=payments.find(p=>p.id===payEdit); if(z){$('#pm').hidden=true;openReceipt(z)}};
+const _op10=openPay;
+openPay=function(x){_op10(x);$('#pRec').hidden=!x};
+const _psv=$('#pSave').onclick;
+$('#pSave').onclick=()=>{
+  const isNew=!payEdit, n0=payments.length;
+  _psv();
+  if(isNew&&payments.length>n0){const z=payments[payments.length-1]; actToast('Jama save ho gaya','Rasid banayein',()=>openReceipt(z),9000)}
+};
+
 boot();
 </script>
 </body></html>
