@@ -1583,6 +1583,96 @@ rSettings=function(){
 const _rFast=render;
 render=function(){_inR=true;_grpE=null;_csM=new Map();try{_rFast()}finally{_inR=false;_grpE=null;_csM=null}};
 
+/* ---- khate ki screen: aasan aur rangeen ---- */
+document.head.insertAdjacentHTML('beforeend','<style>.cpf{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:20px;padding:14px;box-shadow:var(--sh)}.cpf b{font-size:20px;display:block}.bqc{border-radius:24px;padding:20px;color:#fff;margin:12px 0;box-shadow:0 12px 26px rgba(0,0,0,.16)}.bqc.due{background:linear-gradient(135deg,#b4531a,#e8872f)}.bqc.ok{background:linear-gradient(135deg,#1b7a45,#38b56d)}.bqc.over{background:linear-gradient(135deg,#08505d,#17a2b8)}.bqc small{display:block;font-size:14px;opacity:.95}.bqn{font-size:42px;font-weight:800;margin:6px 0;font-variant-numeric:tabular-nums}.bqs{font-size:15px;font-weight:600}.bqh{margin-top:10px;background:rgba(255,255,255,.2);border-radius:12px;padding:8px 12px;font-size:14px}.eqc{background:var(--card);border-radius:20px;padding:14px 16px;box-shadow:var(--sh);margin-bottom:12px}.eqt{font-weight:800;margin-bottom:4px}.eqr{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px dashed var(--ln);font-variant-numeric:tabular-nums}.eqr .op{width:22px;text-align:center;font-style:normal;font-weight:800;color:var(--mu);font-size:18px}.eqr span{flex:1}.eqr .g{color:var(--ok)}.eqr.tot{border-top:2px solid var(--ink);font-weight:800}.eqp{margin-top:8px;padding:10px 12px;background:var(--soft);border-radius:12px;font-size:14px}.bigb{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}.bb{border:0;border-radius:18px;padding:16px 8px;font-weight:800;font-size:15px;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 8px 18px rgba(0,0,0,.14);width:100%;margin:0}.bb .em{font-size:26px}.bb.w{background:linear-gradient(135deg,#0a5f6e,#0f8aa0)}.bb.g{background:linear-gradient(135deg,#1b7a45,#38b56d)}.bb:active{transform:scale(.97)}.pend{background:#fff4e0;color:#8a5a12;border-radius:16px;padding:12px 14px;margin-bottom:10px;font-size:14px}.pend .btn{margin-top:10px}.dcard{background:var(--card);border-radius:20px;box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}.dh{padding:12px 14px;font-weight:800;background:var(--soft);color:var(--p)}.dh .em{margin-inline-end:6px}.dr{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--ln)}.dr:active{background:var(--soft)}.di{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}.di.w{background:rgba(15,138,160,.18)}.di.g{background:rgba(31,138,76,.18)}.da{white-space:nowrap;font-variant-numeric:tabular-nums}.gg{color:var(--ok)}.df{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;background:var(--bg);font-size:13px;color:var(--mu)}.df b{color:var(--ink)}@media (prefers-color-scheme:dark){.pend{background:#3a2c12;color:#f1c27d}}</style>');
+
+Object.assign(UR,{
+ 'Pani ki nayi entry':'پانی کی نئی انٹری',
+ 'Is bande se aap ko lene hain':'اس بندے سے آپ کو لینے ہیں',
+ 'Is bande ne zyada paise de diye hain':'اس بندے نے زیادہ پیسے دے دیے ہیں',
+ 'Abhi ye paise baqi hain':'ابھی یہ پیسے باقی ہیں',
+ 'Hisaab saaf hai ✅':'حساب صاف ہے ✅',
+ 'Ye paise aage ke hisaab mein kam honge':'یہ پیسے آگے کے حساب میں کم ہوں گے',
+ 'Baqi pani:':'باقی پانی:',
+ 'Hisaab kaise bana?':'حساب کیسے بنا؟',
+ 'Pani ke paise':'پانی کے پیسے',
+ 'Purani book ka hisaab':'پرانی کتاب کا حساب',
+ 'Paise mile':'پیسے ملے',
+ 'Ab tak kitna pani diya:':'اب تک کتنا پانی دیا:',
+ 'Din ke hisaab se':'دن کے حساب سے',
+ 'Pani diya':'پانی دیا',
+ 'Hisaab se kam ho gaye':'حساب سے کم ہو گئے',
+ 'Abhi hisaab se kam nahi hue':'ابھی حساب سے کم نہیں ہوئے',
+ 'Is din ke baad baqaya':'اس دن کے بعد بقایا',
+ 'Tap karke badal sakte hain':'ٹیپ کر کے بدل سکتے ہیں',
+ 'jama hain, lekin abhi hisaab se kam nahi kiye':'جمع ہیں، لیکن ابھی حساب سے کم نہیں کیے',
+ 'Ab hisaab se kam karein':'اب حساب سے کم کریں'
+});
+URP.push([/^Ek ghante ka rate: /,'ایک گھنٹے کا ریٹ: ']);
+
+function rDetail(){
+  const c=customers.find(x=>x.id===cid);
+  if(!c){view='khata';return render()}
+  const k=cs(c), q=ps(c), all=flt==='all', asc=localStorage.getItem('tk_sort')==='asc';
+  const days={}, D=d=>days[d]=days[d]||{e:[],p:[]};
+  entries.filter(e=>e.customer_id===c.id).forEach(e=>D(ymd(new Date(e.start_at))).e.push(e));
+  payments.filter(z=>z.customer_id===c.id).forEach(z=>D(ymd(new Date(z.paid_at))).p.push(z));
+  let bal=+c.opening||0; const rows=[];
+  Object.keys(days).sort().forEach(d=>{
+    const g=days[d];
+    const es=g.e.slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at));
+    const pz=g.p.slice().sort((a,b)=>new Date(a.paid_at)-new Date(b.paid_at));
+    es.forEach(e=>{bal+=amt(e)});
+    pz.forEach(z=>{if(z.applied) bal-=z.amount});
+    rows.push({d,es,pz,after:bal});
+  });
+  const vis=rows.filter(r=>inFlt({start_at:r.d+'T12:00:00'})), ord=asc?vis:vis.slice().reverse();
+  const b0=Math.round(q.bq), st=b0>0?'due':(b0===0?'ok':'over');
+  const lab=st==='over'?'Is bande ne zyada paise de diye hain':'Is bande se aap ko lene hain';
+  const note=st==='due'?'Abhi ye paise baqi hain':(st==='ok'?'Hisaab saaf hai ✅':'Ye paise aage ke hisaab mein kam honge');
+  const dayCard=r=>{
+    const a=r.es.map(e=>`<div class="dr" data-e="${e.id}"><span class="di w">💧</span><div class="grow"><b>Pani diya</b><div class="mu">${tm(e.start_at)} se ${tm(e.end_at)} &middot; ${dur(ms(e))}${disc(e)?' &middot; riyat':''}</div></div><b class="da">${rs(amt(e))}</b></div>`).join('');
+    const p=r.pz.map(z=>`<div class="dr" data-p="${z.id}"><span class="di g">💰</span><div class="grow"><b>Paise mile</b><div class="mu">${z.applied?'Hisaab se kam ho gaye':'Abhi hisaab se kam nahi hue'}</div></div><b class="da gg">+ ${rs(z.amount)}</b></div>`).join('');
+    return `<div class="dcard"><div class="dh"><span class="em">📅</span>${fd(r.d)}</div>${a}${p}<div class="df"><span>Is din ke baad baqaya</span><b>${rs(r.after)}</b></div></div>`;
+  };
+  const opn=(all&&k.o>0)?`<div class="dcard"><div class="dr" id="opn"><span class="di w">📖</span><div class="grow"><b>Purani book ka hisaab</b><div class="mu">Tap karke badal sakte hain</div></div><b class="da">${rs(k.o)}</b></div></div>`:'';
+  const body=(asc?opn:'')+ord.map(dayCard).join('')+(asc?'':opn);
+  const h=`<div class="cpf">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><div class="mu">Ek ghante ka rate: Rs ${c.rate}</div></div></div>
+  <div class="bqc ${st}"><small>${lab}</small><div class="bqn">${rs(Math.abs(q.bq))}</div><div class="bqs">${note}</div>${(st==='due'&&q.bms>0)?`<div class="bqh">Baqi pani: <b>${dur(q.bms)}</b></div>`:''}</div>
+  <div class="eqc"><div class="eqt">Hisaab kaise bana?</div>
+  <div class="eqr"><i class="op"></i><span>Pani ke paise</span><b>${rs(k.n)}</b></div>
+  ${k.o>0?`<div class="eqr"><i class="op">+</i><span>Purani book ka hisaab</span><b>${rs(k.o)}</b></div>`:''}
+  <div class="eqr"><i class="op">&minus;</i><span>Paise mile</span><b class="g">${rs(q.pa)}</b></div>
+  <div class="eqr tot"><i class="op">=</i><span>Baqaya</span><b>${rs(q.bq)}</b></div>
+  <div class="eqp"><span class="em">💧</span> Ab tak kitna pani diya: <b>${dur(k.ms)}</b></div></div>
+  <div class="bigb"><button class="bb w" id="addE"><span class="em">💧</span>Pani ki nayi entry</button><button class="bb g" id="payBtn"><span class="em">💰</span>Pesay jama karein</button></div>
+  ${q.pp>0?`<div class="pend"><b>${rs(q.pp)}</b> jama hain, lekin abhi hisaab se kam nahi kiye<button class="btn" id="applyAll">Ab hisaab se kam karein</button></div>`:''}
+  <button class="btn s" id="shotBtn" style="margin:0 0 12px"><span class="em">📷</span> Khata ki tasveer banayen</button>
+  <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>
+  <div class="sec" style="margin:16px 4px 8px"><h2>Din ke hisaab se</h2><button class="lnk" id="sortB">${asc?'Purane pehle':'Naye pehle'} ⇅</button></div>
+  ${body||'<div class="empty">Is muddat mein koi entry nahi.</div>'}
+  <div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
+  $('#main').innerHTML=h;
+  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
+  document.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>openPay(payments.find(x=>x.id===el.dataset.p)));
+  $('#addE').onclick=()=>openForm(null);
+  $('#payBtn').onclick=()=>openPay(null);
+  $('#shotBtn').onclick=()=>openShot(customers.find(x=>x.id===cid));
+  if($('#applyAll')) $('#applyAll').onclick=()=>{
+    if(!confirm('Jama pesay hisaab se minus kar dein?')) return;
+    payments.filter(x=>x.customer_id===cid&&!x.applied).forEach(x=>mut('payments','upd',{id:x.id,applied:true}));
+    toast('Minus ho gaye');
+  };
+  $('#sortB').onclick=()=>{localStorage.setItem('tk_sort',asc?'desc':'asc');render()};
+  $('#eC').onclick=()=>openCust(c);
+  if($('#opn')) $('#opn').onclick=()=>openCust(c);
+  $('#dC').onclick=()=>{
+    if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?')) return;
+    view='khata'; mut('customers','del',{id:c.id});
+  };
+  bindE();
+}
+
 boot();
 </script>
 <link rel="stylesheet" href="ui.css">
