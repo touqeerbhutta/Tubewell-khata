@@ -70,7 +70,7 @@ header button#bOut{background:#ffffff1f;border:1px solid #ffffff2b;border-radius
 .empty{border-radius:var(--r-md);padding:38px 14px;color:var(--mu)}
 
 /* 6 ---- Detail screen: tiles, chips, table ---- */
-.kb{grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+.kb{grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px}
 .kb>div{background:var(--card);border-radius:var(--r-sm);padding:12px 10px;box-shadow:var(--sh);border:1px solid #0b2a3008}
 .kb small{font-size:10.5px;font-weight:700;letter-spacing:.6px;text-transform:uppercase}
 .kb b{font-size:14.5px;font-weight:800;color:var(--ink);margin-top:5px}
@@ -126,7 +126,6 @@ nav button.on{background:var(--soft);color:var(--p)}
 }
 
 /* 11 ---- Detail tiles: 2 ya 3 tiles (jama sirf tab jab minus nahi hua) ---- */
-.kb.kb2{grid-template-columns:repeat(2,1fr)}
 .kb .pend small{color:#b86a14}
 .kb .pend b{color:#b86a14}
 input[type=range]{padding:0;border:0;background:transparent;height:34px;accent-color:var(--p2);box-shadow:none}
@@ -216,3 +215,24 @@ html.lite.glass header{background:linear-gradient(140deg,#073f49,#12a0b6)}
   html.lite.glass nav{background:rgba(18,35,40,calc(.95 - var(--gl)*.2))}
   html.lite.glass .sheet{background:rgba(18,35,40,.98)}
 }
+
+/* ---- fixes ---- */
+/* banday ke khate ka hero: avatar ka harf beech mein (.khd span avatar par bhi lagta tha) */
+.khd .av{display:flex;align-items:center;justify-content:center;margin:0;opacity:1}
+/* 4 tiles = 2x2, 3 tiles = aakhri tile poori chaurai mein */
+.kb>div:last-child:nth-child(odd){grid-column:1/-1}
+/* Baqaya tile glass mein bhi rangeen rahe (pehle safed par safed text tha) */
+.kb>div.hl,html.glass .kb>div.hl{background:linear-gradient(135deg,#0a5f6e,#0f8aa0)!important;border-color:rgba(255,255,255,.25)}
+.kb .hl small,.kb .hl i{color:#d4eef3}
+.kb .hl b{color:#fff}
+
+/* ---- banday ke khate ke bade buttons aur "abhi minus nahi" box ---- */
+.bigb{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}
+.bb{border:0;border-radius:18px;padding:16px 8px;font-weight:800;font-size:15px;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 8px 18px rgba(0,0,0,.14);width:100%;margin:0}
+.bb .em{font-size:26px}
+.bb.w{background:linear-gradient(135deg,#0a5f6e,#0f8aa0)}
+.bb.g{background:linear-gradient(135deg,#1b7a45,#38b56d)}
+.bb:active{transform:scale(.97)}
+.pend{background:#fff4e0;color:#8a5a12;border-radius:16px;padding:12px 14px;margin-bottom:10px;font-size:14px}
+.pend .btn{margin-top:10px}
+@media (prefers-color-scheme:dark){.pend{background:#3a2c12;color:#f1c27d}}

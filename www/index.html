@@ -206,9 +206,10 @@ window.addEventListener('error',function(e){window.__errs.push((e.message||'')+'
 setTimeout(function(){
   var a=document.getElementById('app'),u=document.getElementById('auth');
   if(a&&u&&a.hidden&&u.hidden){
-    document.body.insertAdjacentHTML('beforeend','<div style="position:fixed;left:0;right:0;top:0;bottom:0;z-index:2000;background:#fff;color:#122428;padding:24px;font:15px system-ui;overflow:auto"><h3>App shuru nahi ho saki</h3><p>Is ka screenshot bhej dein:</p><pre style="white-space:pre-wrap;background:#f2f5f7;padding:12px;border-radius:12px">'+(window.__errs.join('\n')||'koi error nahi mila')+'</pre><button style="padding:14px;border:0;border-radius:12px;background:#0a5f6e;color:#fff;font-weight:700;width:100%" onclick="try{Capacitor.Plugins.CapacitorUpdater.reset().then(function(){location.reload()})}catch(e){location.reload()}">Asli (APK wale) version par wapas jao</button></div>');
+    document.body.insertAdjacentHTML('beforeend','<div id="errOv" style="position:fixed;left:0;right:0;top:0;bottom:0;z-index:2000;background:#fff;color:#122428;padding:24px;font:15px system-ui;overflow:auto"><h3>App shuru nahi ho saki</h3><p>Is ka screenshot bhej dein:</p><pre style="white-space:pre-wrap;background:#f2f5f7;padding:12px;border-radius:12px">'+(window.__errs.join('\n')||'koi error nahi mila')+'</pre><button style="padding:14px;border:0;border-radius:12px;background:#0a5f6e;color:#fff;font-weight:700;width:100%" onclick="try{Capacitor.Plugins.CapacitorUpdater.reset().then(function(){location.reload()})}catch(e){location.reload()}">Asli (APK wale) version par wapas jao</button></div>');
   }
-},7000);
+},25000);
+setInterval(function(){var o=document.getElementById('errOv'),a=document.getElementById('app'),u=document.getElementById('auth');if(o&&((a&&!a.hidden)||(u&&!u.hidden)))o.remove()},1000);
 </script>
 
 </head>
@@ -338,14 +339,6 @@ const isNet=er=>!navigator.onLine||/fetch|network/i.test((er&&er.message)||'');
 
 /* ---- login ---- */
 const mail=u=>u.trim().toLowerCase().replace(/\s+/g,'')+'@tubewell.app';
-async function doAuth(signup){
-  const u=$('#u').value, pw=$('#pw').value;
-  if(!u.trim()||pw.length<6) return toast('Username likhein, password kam az kam 6 harf');
-  const fn=signup?sb.auth.signUp.bind(sb.auth):sb.auth.signInWithPassword.bind(sb.auth);
-  const {error}=await fn({email:mail(u),password:pw});
-  if(error) return toast(error.message);
-  boot();
-}
 $('#bLogin').onclick=()=>doAuth(false);
 $('#bSign').onclick=()=>doAuth(true);
 $('#bOut').onclick=async()=>{
@@ -371,23 +364,11 @@ async function boot(){
 }
 
 /* ---- sync ---- */
-async function flush(){
-  if(flushing||!Q.length) return; flushing=true;
-  try{
-    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
-    while(Q.length){
-      const {t,op,row}=Q[0]; let r;
-      if(op==='ins') r=await sb.from(t).upsert(row);
-      else if(op==='upd'){const {id,...rest}=row; r=await sb.from(t).update(rest).eq('id',id)}
-      else r=await sb.from(t).delete().eq('id',row.id);
-      if(r.error){ if(isNet(r.error)) break; toast('Sync masla: '+r.error.message) }
-      Q.shift(); saveLocal(); setStat();
-    }
-  }catch(e){}finally{flushing=false;setStat()}
-}
+let _mseq=0,_lastLoad=0;
 async function loadAll(){
   await flush();
   if(Q.length) return render();
+  const s0=_mseq;
   const c=await sb.from('customers').select('*').order('name');
   if(c.error) return render();
   let all=[],from=0;
@@ -399,9 +380,11 @@ async function loadAll(){
   const pr=await sb.from('payments').select('*').order('paid_at',{ascending:false});
   if(pr.error&&isNet(pr.error)) return render();
   if(!pr.error) payments=pr.data;
-  customers=c.data; entries=all; saveLocal(); render();
+  if(_mseq!==s0||Q.length) return render();
+  customers=c.data; entries=all; _lastLoad=Date.now(); saveLocal(); render();
 }
 function mut(t,op,row){
+  _mseq++;
   const arr=t==='customers'?customers:t==='payments'?payments:entries, i=arr.findIndex(x=>x.id===row.id);
   if(op==='del'){if(i>-1)arr.splice(i,1);if(t==='customers')entries=entries.filter(e=>e.customer_id!==row.id)}
   else if(i>-1) Object.assign(arr[i],row); else arr.push(Object.assign({},row));
@@ -455,12 +438,6 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v)
 $('#back').onclick=()=>go('khata');
 
 /* ---- banda form ---- */
-function openCust(c){
-  custEdit=c?c.id:null;
-  $('#cmT').textContent=c?'Banda theek karein':'Naya banda';
-  $('#cmN').value=c?c.name:''; $('#cmR').value=c?c.rate:''; $('#cmO').value=c&&c.opening?c.opening:'';
-  $('#cm').hidden=false;
-}
 $('#cmX').onclick=()=>$('#cm').hidden=true;
 $('#cmS').onclick=()=>{
   const name=$('#cmN').value.trim(), rate=parseFloat($('#cmR').value), opening=parseFloat($('#cmO').value)||0;
@@ -475,7 +452,8 @@ function calc(keep){
   const d=$('#fd').value,s=$('#fs').value,e=$('#fe').value,r=parseFloat($('#fr').value);
   if(!d||!s||!e||isNaN(r)){$('#prev').textContent='-';return null}
   const a=new Date(d+'T'+s), b=new Date(d+'T'+e);
-  if(b<=a) b.setDate(b.getDate()+1);
+  if(b.getTime()===a.getTime()){$('#prev').textContent='Shuru aur khatam ka waqt ek jaisa ha';return null}
+  if(b<a) b.setDate(b.getDate()+1);
   const t=b-a, auto=Math.round(t/3600000*r);
   if(!manual&&!keep) $('#fa').value=auto;
   const fin=manual?(parseFloat($('#fa').value)||0):auto;
@@ -522,7 +500,7 @@ $('#fDel').onclick=()=>{
 
 window.addEventListener('online',()=>{setStat();loadAll()});
 window.addEventListener('offline',setStat);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#app').hidden)loadAll()});
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#app').hidden&&Date.now()-_lastLoad>60000)loadAll()});
 setInterval(()=>{if(Q.length)flush()},15000);
 document.head.insertAdjacentHTML('beforeend','<style>#main{touch-action:pan-y}</style>');
 const gname=()=>{const n=localStorage.getItem('tk_name');return n?', '+esc(n):''};
@@ -634,21 +612,6 @@ if(AppP) AppP.addListener('backButton',()=>{
   s.onclick=hide; setTimeout(hide,3000);
 })();
 
-function decorate(){
-  const m=$('#main'); if(!m) return;
-  if(view==='khata'&&!m.querySelector('.greet')){
-    const d=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-    m.insertAdjacentHTML('afterbegin',`<div class="greet">Assalam o Alaikum${gname()} 👋<small>${d}</small></div>`);
-  }
-  const h=m.querySelector('.hero'); return;
-  let tot=0,jm=0;
-  if(view==='khata') customers.forEach(c=>{tot+=cs(c).m;jm+=ps(c).jama});
-  else if(view==='detail'&&flt==='all'){const c=customers.find(x=>x.id===cid);if(!c)return;tot=cs(c).m;jm=ps(c).jama}
-  else return;
-  if(tot<=0) return;
-  const p=Math.max(0,Math.min(100,Math.round(jm/tot*100)));
-  h.insertAdjacentHTML('beforeend',`<div class="bar"><i style="width:${p}%"></i></div><div class="bl">${p}% wasool ho chuka</div>`);
-}
 const _r3=render;
 render=function(){_r3();decorate()};
 
@@ -824,7 +787,7 @@ const ps=c=>{
 
 function rKhata(){
   let tq=0,tms=0;
-  customers.forEach(c=>{const k=cs(c),q=ps(c);tq+=q.bq;tms+=k.ms});
+  customers.forEach(c=>{const k=cs(c),q=ps(c);tq+=Math.max(0,q.bq);tms+=k.ms});
   const n=customers.length;
   let h=`<div class="hero khero">
   <div class="ktop"><span class="klbl">Kul baqaya</span><span class="kchip">${n} ${n===1?'banda':'bande'}</span></div>
@@ -1277,66 +1240,6 @@ render=function(){
 document.head.insertAdjacentHTML('beforeend','<style>.kb{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 14px}.kb>div{background:var(--soft);border-radius:16px;padding:12px;min-width:0}.kb small{display:block;font-size:11px;color:var(--mu);font-weight:600}.kb b{display:block;font-size:16.5px;margin-top:3px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.kb i{display:block;font-style:normal;font-size:11px;color:var(--mu);margin-top:2px}.kb .hl{background:linear-gradient(135deg,#0a5f6e,#0f8aa0)}.kb .hl small,.kb .hl i{color:#d4eef3}.kb .hl b{color:#fff}.kt{background:var(--card);border-radius:18px;overflow:hidden;box-shadow:var(--sh);margin-bottom:12px}.kr{display:grid;grid-template-columns:58px 1fr 42px 62px 68px;gap:4px;padding:9px 10px;font-size:11.5px;line-height:1.25;align-items:start;border-bottom:1px solid var(--ln);font-variant-numeric:tabular-nums}.kr>:nth-child(n+3){text-align:right}.kr.kh{background:#0a5f6e;color:#fff;font-weight:700;font-size:11px;border:0}.kr.alt{background:rgba(10,95,110,.045)}.kr.pay{color:var(--ok);cursor:pointer}.kr.opn{color:var(--mu);cursor:pointer}.kr.tot{background:var(--soft);color:var(--p);font-weight:800;font-size:12.5px;border:0;padding:12px 10px}.rg{padding:5px 0;border-radius:6px}.rg:active,.kr.pay:active,.kr.opn:active{background:var(--soft)}.kr .mu{font-size:10.5px}</style>');
 const num=n=>_nf.format(Math.round(n));
 
-function rDetail(){
-  const c=customers.find(x=>x.id===cid);
-  if(!c){view='khata';return render()}
-  const k=cs(c), q=ps(c), all=flt==='all', asc=localStorage.getItem('tk_sort')==='asc';
-  const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  const days={},D=d=>days[d]=days[d]||{e:[],p:[]};
-  entries.filter(e=>e.customer_id===c.id).forEach(e=>D(ymd(new Date(e.start_at))).e.push(e));
-  payments.filter(z=>z.customer_id===c.id).forEach(z=>D(ymd(new Date(z.paid_at))).p.push(z));
-  let bal=+c.opening||0; const rows=[];
-  Object.keys(days).sort().forEach(d=>{
-    const g=days[d], es=g.e.slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at));
-    if(es.length){const t=sum(es);bal+=t.m;rows.push({k:'e',d,es,ms:t.ms,a:t.m,b:bal})}
-    g.p.forEach(z=>{if(z.applied)bal-=z.amount;rows.push({k:'p',d,z,b:bal})});
-  });
-  const sel=rows.filter(r=>inFlt({start_at:r.d+'T12:00:00'}));
-  const tms=sel.reduce((a,r)=>a+(r.ms||0),0), tam=sel.reduce((a,r)=>a+(r.k==='e'?r.a:0),0);
-  const ord=asc?sel:sel.slice().reverse();
-  const row=(r,i)=>{
-    const alt=i%2?' alt':'';
-    if(r.k==='e') return `<div class="kr${alt}"><div>${sd(r.d)}</div><div>${r.es.map(e=>`<div class="rg" data-e="${e.id}">${tm(e.start_at)}–${tm(e.end_at)}${disc(e)?' <span class="mu">(riyat)</span>':''}</div>`).join('')}</div><div>${hh(r.ms)}</div><div><b>${num(r.a)}</b></div><div>${num(r.b)}</div></div>`;
-    return `<div class="kr pay${alt}" data-p="${r.z.id}"><div>${sd(r.d)}</div><div>Jama pesay${r.z.applied?'':'<br><span class="mu">(abhi minus nahi)</span>'}</div><div></div><div><b>${r.z.applied?'- ':''}${num(r.z.amount)}</b></div><div>${num(r.b)}</div></div>`;
-  };
-  const opn=(all&&k.o>0)?`<div class="kr opn" id="opn"><div></div><div>Pehle ka hisaab<br><span class="mu">(purani book)</span></div><div></div><div><b>${num(k.o)}</b></div><div>${num(k.o)}</div></div>`:'';
-  const shown=ord.filter(r=>!(r.k==='p'&&r.z.applied));
-  const body=(asc?opn:'')+shown.map(row).join('')+(asc?'':opn);
-  let h=`<div class="hero dhero"><div class="hhead">${av(c.name)}<div><b>${esc(c.name)}</b><small>Rate Rs ${c.rate} per ghanta &middot; ${today}</small></div></div>
-  <div class="ktop"><span class="klbl">Baqaya</span></div>
-  <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(q.bq))}</div>
-  <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Baqaya pani</span><b>${dur(q.bms)}</b></div></div>
-  <div class="kb${q.pp>0?'':' kb2'}">
-  <div><small>Total pani</small><b>${dur(k.ms)}</b></div>
-  <div><small>Hisaab</small><b>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
-  ${q.pp>0?`<div class="pend"><small>Jama (minus nahi)</small><b>${rs(q.pp)}</b></div>`:''}</div>
-  <button class="btn" id="payBtn" style="margin:0 0 12px">+ Pesay jama karein</button>
-  ${q.pp>0?`<button class="btn s" id="applyAll" style="margin:0 0 12px">Jama pesay ab minus karein (${rs(q.pp)})</button>`:''}
-  <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>
-  <div class="sec" style="margin:14px 4px 8px"><h2>Hisaab</h2><button class="lnk" id="sortB">${asc?'Purane pehle':'Naye pehle'} ⇅</button></div>
-  <div class="kt"><div class="kr kh"><div>Tarikh</div><div>Tafseel</div><div>Ghantay</div><div>Rakam</div><div>Baqaya</div></div>
-  ${body||'<div class="empty" style="padding:22px;border:0">Is muddat mein koi entry nahi.</div>'}
-  <div class="kr tot"><div>${all?'Kul':'Total'}</div><div></div><div>${hh(all?k.ms:tms)}</div><div>${num(all?k.m:tam)}</div><div>${num(q.bq)}</div></div></div>
-  <div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
-  $('#main').innerHTML=h;
-  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
-  document.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>openPay(payments.find(x=>x.id===el.dataset.p)));
-  $('#payBtn').onclick=()=>openPay(null);
-  if($('#applyAll')) $('#applyAll').onclick=()=>{
-    if(!confirm('Jama pesay hisaab se minus kar dein?')) return;
-    payments.filter(x=>x.customer_id===cid&&!x.applied).forEach(x=>mut('payments','upd',{id:x.id,applied:true}));
-    toast('Minus ho gaye');
-  };
-  $('#sortB').onclick=()=>{localStorage.setItem('tk_sort',asc?'desc':'asc');render()};
-  $('#eC').onclick=()=>openCust(c);
-  if($('#opn')) $('#opn').onclick=()=>openCust(c);
-  $('#dC').onclick=()=>{
-    if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?')) return;
-    view='khata'; mut('customers','del',{id:c.id});
-  };
-  bindE();
-}
-
 /* ---- backup, rasid, recycle bin ---- */
 document.head.insertAdjacentHTML('beforeend','<style>#actT{position:fixed;left:16px;right:16px;bottom:calc(100px + env(safe-area-inset-bottom));z-index:70;display:flex;align-items:center;justify-content:space-between;gap:10px;background:#102226;color:#fff;padding:12px 14px;border-radius:16px;box-shadow:0 10px 28px #0006;font-weight:600}#actT button{background:#fff;color:#0a5f6e;border:0;border-radius:11px;padding:8px 14px;font-weight:700;width:auto;margin:0}#actT.in{animation:actin .3s cubic-bezier(.22,1,.36,1)}@keyframes actin{from{transform:translateY(20px);opacity:0}}</style>');
 document.body.insertAdjacentHTML('beforeend','<div id="actT" hidden><span></span><button></button></div>');
@@ -1594,96 +1497,6 @@ rSettings=function(){
 const _rFast=render;
 render=function(){_inR=true;_grpE=null;_csM=new Map();try{_rFast()}finally{_inR=false;_grpE=null;_csM=null}};
 
-/* ---- khate ki screen: aasan aur rangeen ---- */
-document.head.insertAdjacentHTML('beforeend','<style>.cpf{display:flex;align-items:center;gap:14px;background:var(--card);border-radius:20px;padding:14px;box-shadow:var(--sh)}.cpf b{font-size:20px;display:block}.bqc{border-radius:24px;padding:20px;color:#fff;margin:12px 0;box-shadow:0 12px 26px rgba(0,0,0,.16)}.bqc.due{background:linear-gradient(135deg,#b4531a,#e8872f)}.bqc.ok{background:linear-gradient(135deg,#1b7a45,#38b56d)}.bqc.over{background:linear-gradient(135deg,#08505d,#17a2b8)}.bqc small{display:block;font-size:14px;opacity:.95}.bqn{font-size:42px;font-weight:800;margin:6px 0;font-variant-numeric:tabular-nums}.bqs{font-size:15px;font-weight:600}.bqh{margin-top:10px;background:rgba(255,255,255,.2);border-radius:12px;padding:8px 12px;font-size:14px}.eqc{background:var(--card);border-radius:20px;padding:14px 16px;box-shadow:var(--sh);margin-bottom:12px}.eqt{font-weight:800;margin-bottom:4px}.eqr{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px dashed var(--ln);font-variant-numeric:tabular-nums}.eqr .op{width:22px;text-align:center;font-style:normal;font-weight:800;color:var(--mu);font-size:18px}.eqr span{flex:1}.eqr .g{color:var(--ok)}.eqr.tot{border-top:2px solid var(--ink);font-weight:800}.eqp{margin-top:8px;padding:10px 12px;background:var(--soft);border-radius:12px;font-size:14px}.bigb{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 10px}.bb{border:0;border-radius:18px;padding:16px 8px;font-weight:800;font-size:15px;color:#fff;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:0 8px 18px rgba(0,0,0,.14);width:100%;margin:0}.bb .em{font-size:26px}.bb.w{background:linear-gradient(135deg,#0a5f6e,#0f8aa0)}.bb.g{background:linear-gradient(135deg,#1b7a45,#38b56d)}.bb:active{transform:scale(.97)}.pend{background:#fff4e0;color:#8a5a12;border-radius:16px;padding:12px 14px;margin-bottom:10px;font-size:14px}.pend .btn{margin-top:10px}.dcard{background:var(--card);border-radius:20px;box-shadow:var(--sh);margin-bottom:12px;overflow:hidden}.dh{padding:12px 14px;font-weight:800;background:var(--soft);color:var(--p)}.dh .em{margin-inline-end:6px}.dr{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--ln)}.dr:active{background:var(--soft)}.di{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none}.di.w{background:rgba(15,138,160,.18)}.di.g{background:rgba(31,138,76,.18)}.da{white-space:nowrap;font-variant-numeric:tabular-nums}.gg{color:var(--ok)}.df{display:flex;justify-content:space-between;gap:8px;padding:10px 14px;background:var(--bg);font-size:13px;color:var(--mu)}.df b{color:var(--ink)}@media (prefers-color-scheme:dark){.pend{background:#3a2c12;color:#f1c27d}}</style>');
-
-if(typeof UR!=='undefined')Object.assign(UR,{
- 'Pani ki nayi entry':'پانی کی نئی انٹری',
- 'Is bande se aap ko lene hain':'اس بندے سے آپ کو لینے ہیں',
- 'Is bande ne zyada paise de diye hain':'اس بندے نے زیادہ پیسے دے دیے ہیں',
- 'Abhi ye paise baqi hain':'ابھی یہ پیسے باقی ہیں',
- 'Hisaab saaf hai ✅':'حساب صاف ہے ✅',
- 'Ye paise aage ke hisaab mein kam honge':'یہ پیسے آگے کے حساب میں کم ہوں گے',
- 'Baqi pani:':'باقی پانی:',
- 'Hisaab kaise bana?':'حساب کیسے بنا؟',
- 'Pani ke paise':'پانی کے پیسے',
- 'Purani book ka hisaab':'پرانی کتاب کا حساب',
- 'Paise mile':'پیسے ملے',
- 'Ab tak kitna pani diya:':'اب تک کتنا پانی دیا:',
- 'Din ke hisaab se':'دن کے حساب سے',
- 'Pani diya':'پانی دیا',
- 'Hisaab se kam ho gaye':'حساب سے کم ہو گئے',
- 'Abhi hisaab se kam nahi hue':'ابھی حساب سے کم نہیں ہوئے',
- 'Is din ke baad baqaya':'اس دن کے بعد بقایا',
- 'Tap karke badal sakte hain':'ٹیپ کر کے بدل سکتے ہیں',
- 'jama hain, lekin abhi hisaab se kam nahi kiye':'جمع ہیں، لیکن ابھی حساب سے کم نہیں کیے',
- 'Ab hisaab se kam karein':'اب حساب سے کم کریں'
-});
-if(typeof URP!=='undefined')URP.push([/^Ek ghante ka rate: /,'ایک گھنٹے کا ریٹ: ']);
-
-function rDetail(){
-  const c=customers.find(x=>x.id===cid);
-  if(!c){view='khata';return render()}
-  const k=cs(c), q=ps(c), all=flt==='all', asc=localStorage.getItem('tk_sort')==='asc';
-  const days={}, D=d=>days[d]=days[d]||{e:[],p:[]};
-  entries.filter(e=>e.customer_id===c.id).forEach(e=>D(ymd(new Date(e.start_at))).e.push(e));
-  payments.filter(z=>z.customer_id===c.id).forEach(z=>D(ymd(new Date(z.paid_at))).p.push(z));
-  let bal=+c.opening||0; const rows=[];
-  Object.keys(days).sort().forEach(d=>{
-    const g=days[d];
-    const es=g.e.slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at));
-    const pz=g.p.slice().sort((a,b)=>new Date(a.paid_at)-new Date(b.paid_at));
-    es.forEach(e=>{bal+=amt(e)});
-    pz.forEach(z=>{if(z.applied) bal-=z.amount});
-    rows.push({d,es,pz,after:bal});
-  });
-  const vis=rows.filter(r=>inFlt({start_at:r.d+'T12:00:00'})), ord=asc?vis:vis.slice().reverse();
-  const b0=Math.round(q.bq), st=b0>0?'due':(b0===0?'ok':'over');
-  const lab=st==='over'?'Is bande ne zyada paise de diye hain':'Is bande se aap ko lene hain';
-  const note=st==='due'?'Abhi ye paise baqi hain':(st==='ok'?'Hisaab saaf hai ✅':'Ye paise aage ke hisaab mein kam honge');
-  const dayCard=r=>{
-    const a=r.es.map(e=>`<div class="dr" data-e="${e.id}"><span class="di w">💧</span><div class="grow"><b>Pani diya</b><div class="mu">${tm(e.start_at)} se ${tm(e.end_at)} &middot; ${dur(ms(e))}${disc(e)?' &middot; riyat':''}</div></div><b class="da">${rs(amt(e))}</b></div>`).join('');
-    const p=r.pz.map(z=>`<div class="dr" data-p="${z.id}"><span class="di g">💰</span><div class="grow"><b>Paise mile</b><div class="mu">${z.applied?'Hisaab se kam ho gaye':'Abhi hisaab se kam nahi hue'}</div></div><b class="da gg">+ ${rs(z.amount)}</b></div>`).join('');
-    return `<div class="dcard"><div class="dh"><span class="em">📅</span>${fd(r.d)}</div>${a}${p}<div class="df"><span>Is din ke baad baqaya</span><b>${rs(r.after)}</b></div></div>`;
-  };
-  const opn=(all&&k.o>0)?`<div class="dcard"><div class="dr" id="opn"><span class="di w">📖</span><div class="grow"><b>Purani book ka hisaab</b><div class="mu">Tap karke badal sakte hain</div></div><b class="da">${rs(k.o)}</b></div></div>`:'';
-  const body=(asc?opn:'')+ord.map(dayCard).join('')+(asc?'':opn);
-  const h=`<div class="cpf">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><div class="mu">Ek ghante ka rate: Rs ${c.rate}</div></div></div>
-  <div class="bqc ${st}"><small>${lab}</small><div class="bqn">${rs(Math.abs(q.bq))}</div><div class="bqs">${note}</div>${(st==='due'&&q.bms>0)?`<div class="bqh">Baqi pani: <b>${dur(q.bms)}</b></div>`:''}</div>
-  <div class="eqc"><div class="eqt">Hisaab kaise bana?</div>
-  <div class="eqr"><i class="op"></i><span>Pani ke paise</span><b>${rs(k.n)}</b></div>
-  ${k.o>0?`<div class="eqr"><i class="op">+</i><span>Purani book ka hisaab</span><b>${rs(k.o)}</b></div>`:''}
-  <div class="eqr"><i class="op">&minus;</i><span>Paise mile</span><b class="g">${rs(q.pa)}</b></div>
-  <div class="eqr tot"><i class="op">=</i><span>Baqaya</span><b>${rs(q.bq)}</b></div>
-  <div class="eqp"><span class="em">💧</span> Ab tak kitna pani diya: <b>${dur(k.ms)}</b></div></div>
-  <div class="bigb"><button class="bb w" id="addE"><span class="em">💧</span>Pani ki nayi entry</button><button class="bb g" id="payBtn"><span class="em">💰</span>Pesay jama karein</button></div>
-  ${q.pp>0?`<div class="pend"><b>${rs(q.pp)}</b> jama hain, lekin abhi hisaab se kam nahi kiye<button class="btn" id="applyAll">Ab hisaab se kam karein</button></div>`:''}
-  <button class="btn s" id="shotBtn" style="margin:0 0 12px"><span class="em">📷</span> Khata ki tasveer banayen</button>
-  <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>
-  <div class="sec" style="margin:16px 4px 8px"><h2>Din ke hisaab se</h2><button class="lnk" id="sortB">${asc?'Purane pehle':'Naye pehle'} ⇅</button></div>
-  ${body||'<div class="empty">Is muddat mein koi entry nahi.</div>'}
-  <div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
-  $('#main').innerHTML=h;
-  document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
-  document.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>openPay(payments.find(x=>x.id===el.dataset.p)));
-  $('#addE').onclick=()=>openForm(null);
-  $('#payBtn').onclick=()=>openPay(null);
-  $('#shotBtn').onclick=()=>openShot(customers.find(x=>x.id===cid));
-  if($('#applyAll')) $('#applyAll').onclick=()=>{
-    if(!confirm('Jama pesay hisaab se minus kar dein?')) return;
-    payments.filter(x=>x.customer_id===cid&&!x.applied).forEach(x=>mut('payments','upd',{id:x.id,applied:true}));
-    toast('Minus ho gaye');
-  };
-  $('#sortB').onclick=()=>{localStorage.setItem('tk_sort',asc?'desc':'asc');render()};
-  $('#eC').onclick=()=>openCust(c);
-  if($('#opn')) $('#opn').onclick=()=>openCust(c);
-  $('#dC').onclick=()=>{
-    if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?')) return;
-    view='khata'; mut('customers','del',{id:c.id});
-  };
-  bindE();
-}
-
 /* ---- khate ki screen: tasveer jaisa jadwal (khoobsurat) ---- */
 document.head.insertAdjacentHTML('beforeend','<style>.khd{display:flex;align-items:center;gap:14px;border-radius:22px;padding:16px;color:#fff;background:linear-gradient(135deg,#08505d,#0f8aa0);box-shadow:0 12px 26px rgba(10,95,110,.28);margin-bottom:12px}.khd .av{width:64px;height:64px;font-size:26px;box-shadow:0 0 0 3px rgba(255,255,255,.55)}.khd b{display:block;font-size:22px}.khd span{display:block;font-size:13px;opacity:.92;margin-top:1px}.kb>div{border-radius:18px;padding:14px}.kb b{font-size:17px}.kb .hl{box-shadow:0 8px 18px rgba(10,95,110,.25)}.kr{grid-template-columns:56px 1fr 40px 62px 68px}.kd{font-weight:700}.rg{line-height:1.3;margin-bottom:3px}.rg .to{display:block;color:var(--mu)}.hint{font-size:12.5px;color:var(--mu);margin:0 4px 8px;line-height:1.5}.kt{box-shadow:0 8px 22px rgba(10,95,110,.12)}</style>');
 
@@ -1703,7 +1516,7 @@ function rDetail(){
   });
   const sel=rows.filter(r=>inFlt({start_at:r.d+'T12:00:00'}));
   const tms=sel.reduce((a,r)=>a+(r.ms||0),0), tam=sel.reduce((a,r)=>a+(r.k==='e'?r.a:0),0);
-  const ord=asc?sel:sel.slice().reverse();
+  const ord=(asc?sel:sel.slice().reverse()).filter(r=>!(r.k==='p'&&r.z.applied));
   const row=(r,i)=>{
     const alt=i%2?' alt':'';
     if(r.k==='e') return `<div class="kr${alt}"><div class="kd">${sd(r.d)}</div><div>${r.es.map(e=>`<div class="rg" data-e="${e.id}"><b>${tm(e.start_at)}</b><span class="to">&rarr; ${tm(e.end_at)}${disc(e)?' <span class="mu">(riyat)</span>':''}</span></div>`).join('')}</div><div>${hh(r.ms)}</div><div><b>${num(r.a)}</b></div><div>${num(r.b)}</div></div>`;
@@ -1715,7 +1528,7 @@ function rDetail(){
   <div class="kb">
   <div><small>Total pani</small><b>${dur(k.ms)}</b></div>
   <div><small>Total paise (hisaab)</small><b>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
-  <div><small>Jama pesay</small><b>${rs(q.jama)}</b>${q.pp>0?`<i>${rs(q.pp)} minus nahi</i>`:''}</div>
+  ${q.pp>0?`<div><small>Jama (minus nahi)</small><b>${rs(q.pp)}</b></div>`:''}
   <div class="hl"><small>Baqaya</small><b>${rs(q.bq)}</b><i>${dur(q.bms)} pani</i></div></div>
   <div class="bigb"><button class="bb w" id="addE"><span class="em">💧</span>Pani ki nayi entry</button><button class="bb g" id="payBtn"><span class="em">💰</span>Pesay jama karein</button></div>
   ${q.pp>0?`<div class="pend"><b>${rs(q.pp)}</b> jama hain, lekin abhi hisaab se kam nahi kiye<button class="btn" id="applyAll">Ab hisaab se kam karein</button></div>`:''}
