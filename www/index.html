@@ -432,7 +432,7 @@ function rDaily(){
   <div class="hero"><div class="ktop"><span class="klbl">Is din ka hisaab</span><span class="kchip">${n} ${n===1?'entry':'entries'}</span></div>
   <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(s.m))}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Total waqt</span><b>${dur(s.ms)}</b></div></div>`+
-  (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${et(e)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b><button class="xd" data-del="${e.id}" aria-label="Delete">\u{1F5D1}</button></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
+  (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${et(e)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b><button class="xd xe" data-edit="${e.id}" aria-label="Edit">\u270F\uFE0F</button><button class="xd" data-del="${e.id}" aria-label="Delete">\u{1F5D1}</button></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
   $('#day').onchange=ev=>{day=ev.target.value||ymd(new Date());rDaily()};
   bindE();
 }
@@ -861,6 +861,25 @@ $('#twSave').onclick=()=>{
     toast('Tubewell shuru: '+tm(iso));
   }
 };
+
+/* ---- har entry ke saath edit button ---- */
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest&&ev.target.closest('[data-edit]'); if(!b) return;
+  ev.stopPropagation(); ev.preventDefault();
+  const e=entries.find(x=>x.id===b.dataset.edit); if(e) openForm(e);
+},true);
+
+/* ---- jama ki list: purani (minus ho chuki) jama bhi yahan se theek ya delete ho sakti ha ---- */
+document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="jh" hidden><div class="sheet">
+<h3>Jama ki list</h3><div class="mu">Kisi par tap karke theek ya delete karein</div>
+<div id="jhL"></div><button class="btn s" id="jhX">Band karein</button></div></div>`);
+function openJH(){
+  const l=payments.filter(z=>z.customer_id===cid).sort((a,b)=>new Date(b.paid_at)-new Date(a.paid_at));
+  $('#jhL').innerHTML=l.length?l.map(z=>`<div class="card row" data-jp="${z.id}"><div class="grow"><b class="cn">${rs(z.amount)}</b><div class="mu cm"><span>${sd(ymd(new Date(z.paid_at)))}</span><span>${z.applied?'minus ho chuki':'abhi minus nahi'}</span></div></div><button class="xd xe" aria-label="Edit">\u270F\uFE0F</button></div>`).join(''):'<div class="empty">Koi jama nahi.</div>';
+  $('#jhL').querySelectorAll('[data-jp]').forEach(el=>el.onclick=()=>{$('#jh').hidden=true;openPay(payments.find(x=>x.id===el.dataset.jp))});
+  $('#jh').hidden=false;
+}
+$('#jhX').onclick=()=>$('#jh').hidden=true;
 
 /* ---- har pani ki entry ke saath delete button ---- */
 document.addEventListener('click',ev=>{
@@ -1610,7 +1629,7 @@ function rDetail(){
   const ord=(asc?sel:sel.slice().reverse()).filter(r=>!(r.k==='p'&&r.z.applied));
   const row=(r,i)=>{
     const alt=i%2?' alt':'';
-    if(r.k==='e') return `<div class="kr${alt}"><div class="kd">${sd(r.d)}</div><div>${r.es.map(e=>`<div class="rg" data-e="${e.id}"><b>${tm(e.start_at)}</b><button class="xd" data-del="${e.id}" aria-label="Delete">\u{1F5D1}</button><span class="to">&rarr; ${et(e)}${disc(e)?' <span class="mu">(riyat)</span>':''}</span></div>`).join('')}</div><div>${hh(r.ms)}</div><div><b>${num(r.a)}</b></div><div>${num(r.b)}</div></div>`;
+    if(r.k==='e') return `<div class="kr${alt}"><div class="kd">${sd(r.d)}</div><div>${r.es.map(e=>`<div class="rg" data-e="${e.id}"><b>${tm(e.start_at)}</b><button class="xd xe" data-edit="${e.id}" aria-label="Edit">\u270F\uFE0F</button><span class="to${isRun(e)?' wr':''}">&rarr; ${et(e)}${disc(e)?' <span class="mu">(riyat)</span>':''}</span><button class="xd" data-del="${e.id}" aria-label="Delete">\u{1F5D1}</button></div>`).join('')}</div><div>${hh(r.ms)}</div><div><b>${num(r.a)}</b></div><div>${num(r.b)}</div></div>`;
     return `<div class="kr pay${alt}" data-p="${r.z.id}"><div class="kd">${sd(r.d)}</div><div><b>Jama pesay</b>${r.z.applied?'':'<br><span class="mu">(abhi minus nahi)</span>'}</div><div></div><div><b>${r.z.applied?'- ':''}${num(r.z.amount)}</b></div><div>${num(r.b)}</div></div>`;
   };
   const opn=(all&&k.o>0)?`<div class="kr opn" id="opn"><div></div><div><b>Pehle ka hisaab</b><br><span class="mu">(purani book)</span></div><div></div><div><b>${num(k.o)}</b></div><div>${num(k.o)}</div></div>`:'';
@@ -1630,6 +1649,7 @@ function rDetail(){
   <div class="kt"><div class="kr kh"><div>Tarikh</div><div>Tafseel</div><div>Ghantay</div><div>Rakam</div><div>Baqaya</div></div>
   ${body||'<div class="empty" style="padding:22px;border:0">Is muddat mein koi entry nahi.</div>'}
   <div class="kr tot"><div>${all?'Kul':'Total'}</div><div></div><div>${hh(all?k.ms:tms)}</div><div>${num(all?k.m:tam)}</div><div>${num(q.bq)}</div></div></div>
+  ${payments.some(z=>z.customer_id===c.id)?`<button class="btn s" id="jhBtn" style="margin:0 0 10px"><span class="em">&#128176;</span> Jama ki list (theek / delete)</button>`:''}
   <button class="btn s" id="shotBtn" style="margin:0 0 10px"><span class="em">📷</span> Khata ki tasveer banayen</button>
   <div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
   $('#main').innerHTML=h;
@@ -1639,6 +1659,7 @@ function rDetail(){
   if($('#startT')) $('#startT').onclick=()=>openTW(c,null);
   if($('#stopT')) $('#stopT').onclick=()=>openTW(c,run);
   $('#payBtn').onclick=()=>openPay(null);
+  if($('#jhBtn')) $('#jhBtn').onclick=openJH;
   $('#shotBtn').onclick=()=>openShot(customers.find(x=>x.id===cid));
   if($('#applyAll')) $('#applyAll').onclick=()=>{
     if(!confirm('Jama pesay hisaab se minus kar dein?')) return;
