@@ -787,6 +787,34 @@ const ps=c=>{
   return{jama:pa+pp,pa,pp,bq:k.m-pa,bms:Math.max(0,k.ms-pms)};
 };
 
+/* ---- LIVE: chalte tubewell ka waqt aur paise khud badhte hain (sirf [data-lv] wale text badalte hain, poori screen dobara nahi banti) ---- */
+const durS=m=>{const t=Math.max(0,Math.floor(m/1000)),h=Math.floor(t/3600),mi=Math.floor(t%3600/60),sc=t%60;return h+' ghanta '+p2(mi)+' min '+p2(sc)+' sec'};
+const lvMoney=(el,r)=>Math.round(Math.max(0,el)/3600000*r);
+const liveSel=()=>(view==='detail'?'#pg2':'#main')+' [data-lv]';
+function liveTick(){
+  const now=Date.now();
+  document.querySelectorAll(liveSel()).forEach(n=>{
+    const k=n.dataset.lv; let txt;
+    if(k==='hero'||k==='herot'){
+      const runs=JSON.parse(n.dataset.runs||'[]'), base=+n.dataset.base||0; let add=0;
+      runs.forEach(([st,r,bq])=>{const el=now-st,mo=lvMoney(el,r);add+=k==='hero'?Math.max(0,bq+mo)-Math.max(0,bq):Math.max(0,el)});
+      txt=k==='hero'?_nf.format(Math.round(base+add)):dur(base+add);
+    }else{
+      const el=now-(+n.dataset.s), base=+n.dataset.base||0, mo=lvMoney(el,+n.dataset.r);
+      txt=k==='t'?durS(el):k==='m'?rs(mo):k==='tp'?dur(base+Math.max(0,el)):k==='tm'||k==='bq'||k==='hb'?rs(base+mo):k==='bt'?dur(base+Math.max(0,el))+' pani':k==='h'?'\u25CF Chal raha ha \u00b7 '+dur(Math.max(0,el)):n.textContent;
+    }
+    if(n.textContent!==txt) n.textContent=txt;
+  });
+}
+let _lvT=null;
+function liveSync(){
+  const has=!!document.querySelector(liveSel());
+  if(has&&!_lvT) _lvT=setInterval(()=>{if(!document.hidden)liveTick()},1000);
+  else if(!has&&_lvT){clearInterval(_lvT);_lvT=null}
+  if(has) liveTick();
+}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)liveTick()});
+
 /* ---- Tubewell shuru / band: waqt aap khud likhte hain (timer nahi) ---- */
 document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="tw" hidden><div class="sheet">
 <h3 id="twT">Tubewell shuru karein</h3>
@@ -847,14 +875,16 @@ document.addEventListener('click',ev=>{
 function rKhata(){
   let tq=0,tms=0;
   customers.forEach(c=>{const k=cs(c),q=ps(c);tq+=Math.max(0,q.bq);tms+=k.ms});
-  const n=customers.length, runSet=new Set(entries.filter(isRun).map(e=>e.customer_id));
+  const n=customers.length, runMap=new Map(); entries.forEach(e=>{if(isRun(e)&&!runMap.has(e.customer_id))runMap.set(e.customer_id,e)});
+  const heroRuns=[]; runMap.forEach((e,cid2)=>{const c2=customers.find(x=>x.id===cid2); if(c2) heroRuns.push([new Date(e.start_at).getTime(),e.rate,ps(c2).bq])});
   let h=`<div class="hero khero">
   <div class="ktop"><span class="klbl">Kul baqaya</span><span class="kchip">${n} ${n===1?'banda':'bande'}</span></div>
-  <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(tq))}</div>
-  <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Kul waqt</span><b>${dur(tms)}</b></div></div>
+  <div class="big"><span class="cur">Rs</span><span data-lv="hero" data-base="${tq}" data-runs='${JSON.stringify(heroRuns)}'>${_nf.format(Math.round(tq))}</span></div>
+  <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Kul waqt</span><b data-lv="herot" data-base="${tms}" data-runs='${JSON.stringify(heroRuns)}'>${dur(tms)}</b></div></div>
   <div class="sec"><h2>Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
   h+=n?customers.map(c=>{const k=cs(c),q=ps(c),clr=q.bq>0?'':' clr';
-    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span>${runSet.has(c.id)?'<span class="rn">&#9679; Chal raha ha</span>':''}</div></div><div class="end"><b class="amt${clr}">${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`}).join('')
+    const re=runMap.get(c.id);
+    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span>${re?`<span class="rn" data-lv="h" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}">&#9679; Chal raha ha</span>`:''}</div></div><div class="end"><b class="amt${clr}"${re?` data-lv="hb" data-base="${q.bq}" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}"`:''}>${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`}).join('')
     :'<div class="empty">Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.</div>';
   $('#main').innerHTML=h;
   $('#addC').onclick=()=>openCust(null);
@@ -1554,7 +1584,7 @@ rSettings=function(){
 
 /* ---- speed: ek render ke dauran hisaab ek hi baar nikalta ha ---- */
 const _rFast=render;
-render=function(){_inR=true;_grpE=null;_csM=new Map();try{_rFast()}finally{_inR=false;_grpE=null;_csM=null}};
+render=function(){_inR=true;_grpE=null;_csM=new Map();try{_rFast()}finally{_inR=false;_grpE=null;_csM=null}liveSync()};
 
 /* ---- khate ki screen: tasveer jaisa jadwal (khoobsurat) ---- */
 document.head.insertAdjacentHTML('beforeend','<style>.khd{display:flex;align-items:center;gap:14px;border-radius:22px;padding:16px;color:#fff;background:linear-gradient(135deg,#08505d,#0f8aa0);box-shadow:0 12px 26px rgba(10,95,110,.28);margin-bottom:12px}.khd .av{width:64px;height:64px;font-size:26px;box-shadow:0 0 0 3px rgba(255,255,255,.55)}.khd b{display:block;font-size:22px}.khd span{display:block;font-size:13px;opacity:.92;margin-top:1px}.kb>div{border-radius:18px;padding:14px}.kb b{font-size:17px}.kb .hl{box-shadow:0 8px 18px rgba(10,95,110,.25)}.kr{grid-template-columns:56px 1fr 40px 62px 68px}.kd{font-weight:700}.rg{line-height:1.3;margin-bottom:3px}.rg .to{display:block;color:var(--mu)}.hint{font-size:12.5px;color:var(--mu);margin:0 4px 8px;line-height:1.5}.kt{box-shadow:0 8px 22px rgba(10,95,110,.12)}</style>');
@@ -1564,6 +1594,7 @@ function rDetail(){
   if(!c){view='khata';return render()}
   const k=cs(c), q=ps(c), all=flt==='all', asc=localStorage.getItem('tk_sort')==='asc';
   const run=entries.find(e=>e.customer_id===c.id&&isRun(e));
+  const rst=run?new Date(run.start_at).getTime():0, lv=(k,b)=>run?` data-lv="${k}" data-base="${b}" data-s="${rst}" data-r="${run.rate}"`:'';
   const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   const days={},D=d=>days[d]=days[d]||{e:[],p:[]};
   entries.filter(e=>e.customer_id===c.id).forEach(e=>D(ymd(new Date(e.start_at))).e.push(e));
@@ -1586,11 +1617,11 @@ function rDetail(){
   const body=(asc?opn:'')+ord.map(row).join('')+(asc?'':opn);
   const h=`<div class="khd">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><span>Rate Rs ${c.rate} per ghanta</span><span>Tubewell Khata &middot; ${today}</span></div></div>
   <div class="kb">
-  <div><small>Total pani</small><b>${dur(k.ms)}</b></div>
-  <div><small>Total paise (hisaab)</small><b>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
+  <div><small>Total pani</small><b${lv('tp',k.ms)}>${dur(k.ms)}</b></div>
+  <div><small>Total paise (hisaab)</small><b${lv('tm',k.m)}>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
   ${q.pp>0?`<div><small>Jama (minus nahi)</small><b>${rs(q.pp)}</b></div>`:''}
-  <div class="hl"><small>Baqaya</small><b>${rs(q.bq)}</b><i>${dur(q.bms)} pani</i></div></div>
-  ${run?`<div class="runc"><div><b>Tubewell chal raha ha</b><small>Shuru: ${ymd(new Date(run.start_at))===ymd(new Date())?'':sd(ymd(new Date(run.start_at)))+', '}${tm(run.start_at)}</small></div><button class="stp" id="stopT">Band karo</button></div>`:`<button class="strt" id="startT"><span class="em">&#9654;</span> Tubewell shuru karein</button>`}
+  <div class="hl"><small>Baqaya</small><b${lv('bq',q.bq)}>${rs(q.bq)}</b><i${lv('bt',q.bms)}>${dur(q.bms)} pani</i></div></div>
+  ${run?`<div class="runc"><div><b>Tubewell chal raha ha</b><small>Shuru: ${ymd(new Date(run.start_at))===ymd(new Date())?'':sd(ymd(new Date(run.start_at)))+', '}${tm(run.start_at)}</small><div class="lv"><span${lv('t',0)}>${durS(Date.now()-rst)}</span><b${lv('m',0)}>${rs(lvMoney(Date.now()-rst,run.rate))}</b></div></div><button class="stp" id="stopT">Band karo</button></div>`:`<button class="strt" id="startT"><span class="em">&#9654;</span> Tubewell shuru karein</button>`}
   <div class="bigb"><button class="bb w" id="addE"><span class="em">💧</span>Pani ki nayi entry</button><button class="bb g" id="payBtn"><span class="em">💰</span>Pesay jama karein</button></div>
   ${q.pp>0?`<div class="pend"><b>${rs(q.pp)}</b> jama hain, lekin abhi hisaab se kam nahi kiye<button class="btn" id="applyAll">Ab hisaab se kam karein</button></div>`:''}
   <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>

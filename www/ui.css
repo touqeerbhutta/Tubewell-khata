@@ -264,3 +264,10 @@ html.lite.glass header{background:linear-gradient(140deg,#073f49,#12a0b6)}
 @media (max-width:345px){.rg{grid-template-columns:minmax(0,1fr)}.rg .xd{justify-self:start;margin-top:3px}}
 .card.row .xd{margin-left:2px}
 @media (prefers-color-scheme:dark){.xd{background:#3a1f1c;color:#ff8a7d}}
+
+/* ---- live count ---- */
+.runc>div:first-child{min-width:0}
+.lv{display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 12px;margin-top:8px}
+.lv span{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.lv b{display:inline;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
+[data-lv]{font-variant-numeric:tabular-nums}
