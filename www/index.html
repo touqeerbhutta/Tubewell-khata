@@ -1676,6 +1676,73 @@ function rDetail(){
   bindE();
 }
 
+/* ---- Gallery backup: har pani/jama ke baad us bande ke khate ki tasveer gallery (Pictures/TubewellKhata) mein khud save ---- */
+const galOn=()=>localStorage.getItem('tk_gal')!=='0';
+const galSt=()=>{try{return JSON.parse(localStorage.getItem('tk_gal_st')||'null')}catch(e){return null}};
+const galSetSt=(ok,msg)=>localStorage.setItem('tk_gal_st',JSON.stringify({t:Date.now(),ok,msg}));
+function galPlugin(){
+  const C=window.Capacitor; if(!C||!C.isNativePlatform||!C.isNativePlatform()) return null;
+  try{ if(C.isPluginAvailable&&!C.isPluginAvailable('GallerySaver')) return null }catch(e){}
+  return (C.Plugins&&C.Plugins.GallerySaver)||(C.registerPlugin?C.registerPlugin('GallerySaver'):null);
+}
+const galName=c=>'Khata_'+(c.name.replace(/[^\p{L}\p{N}]+/gu,'_').replace(/^_|_$/g,'')||'banda')+'_'+ymd(new Date());
+let _galQ=[], _galBusy=false, _galT={};
+async function galRun(){
+  if(_galBusy) return; _galBusy=true;
+  try{
+    while(_galQ.length){
+      const id=_galQ.shift(), c=customers.find(x=>x.id===id); if(!c) continue;
+      const G=galPlugin();
+      if(!G){galSetSt(false,'Nayi APK ek baar install karni hogi');break}
+      try{
+        const cv=await drawKhata(c), b64=cv.toDataURL('image/png').split(',')[1]; cv.width=cv.height=0;
+        await G.save({base64:b64,name:galName(c)});
+        galSetSt(true,c.name); toast('Tasveer gallery mein save ✓');
+      }catch(e){
+        const m=String((e&&e.message)||e);
+        galSetSt(false,/UNIMPLEMENTED|not implemented/i.test(m)?'Nayi APK ek baar install karni hogi':m);
+        toast('Gallery backup nahi hua: '+m.slice(0,60));
+      }
+      await new Promise(r=>setTimeout(r,400));
+    }
+  }finally{_galBusy=false}
+}
+function galSchedule(id){
+  clearTimeout(_galT[id]);
+  _galT[id]=setTimeout(()=>{ if(!_galQ.includes(id)) _galQ.push(id); galRun() },4000);
+}
+const _mutGal=mut;
+mut=function(t,op,row){
+  let id=null;
+  if(galOn()&&(t==='entries'||t==='payments')){
+    const src=(t==='entries'?entries:payments).find(x=>x.id===row.id);
+    id=row.customer_id||(src&&src.customer_id)||null;
+  }
+  _mutGal.apply(this,arguments);
+  if(!id) return;
+  if(t==='entries'&&op!=='del'){const e=entries.find(x=>x.id===row.id); if(e&&isRun(e)) return} // chalta hua tubewell: band hone par save hoga
+  galSchedule(id);
+};
+const _rsGal=rSettings;
+rSettings=function(){
+  _rsGal();
+  const on=galOn(), st=galSt(), G=galPlugin();
+  const line=!window.Capacitor||!Capacitor.isNativePlatform||!Capacitor.isNativePlatform()?'Ye sirf Android app mein chalta ha.'
+    :!G?'Is ke liye nayi APK ek baar install karni hogi.'
+    :st?(st.ok?'Aakhri tasveer: '+esc(st.msg)+' \u00b7 '+tm(new Date(st.t).toISOString()):'Masla: '+esc(st.msg)):'Abhi tak koi tasveer save nahi hui.';
+  $('#main').insertAdjacentHTML('afterbegin',`<div class="card" id="galCard"><b>Gallery backup</b>
+  <div class="mu">Har pani ya jama ke baad us bande ke khate ki tasveer gallery ke "TubewellKhata" album mein khud save hoti ha.</div>
+  <div class="chips" style="margin-top:10px"><button data-gal="1" class="${on?'on':''}">On</button><button data-gal="0" class="${on?'':'on'}">Off</button></div>
+  <div class="mu" style="margin:8px 0">${line}</div>
+  <button class="btn s" id="galNow">Abhi sab bandon ka backup lein</button></div>`);
+  document.querySelectorAll('[data-gal]').forEach(b=>b.onclick=()=>{localStorage.setItem('tk_gal',b.dataset.gal);rSettings()});
+  $('#galNow').onclick=()=>{
+    if(!galPlugin()) return toast('Nayi APK ek baar install karein');
+    customers.forEach(c=>{if(!_galQ.includes(c.id))_galQ.push(c.id)});
+    toast('Backup shuru: '+customers.length+' bande'); galRun();
+  };
+};
+
 boot();
 </script>
 <link rel="stylesheet" href="ui.css">
