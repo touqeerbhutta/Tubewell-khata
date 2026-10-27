@@ -311,6 +311,8 @@ const _nf=new Intl.NumberFormat('en-IN');
 const rs=n=>'Rs '+_nf.format(Math.round(n));
 const _msC=new WeakMap();
 const ms=e=>{const k=e.start_at+'|'+e.end_at,c=_msC.get(e);if(c&&c.k===k)return c.m;const m=new Date(e.end_at)-new Date(e.start_at);_msC.set(e,{k,m});return m};
+const isRun=e=>ms(e)===0;
+const et=e=>isRun(e)?'chal raha ha':tm(e.end_at);
 const amt=e=>e.amount!=null?Math.round(e.amount):Math.round(ms(e)/3600000*e.rate);
 const disc=e=>e.amount!=null&&Math.round(e.amount)!==Math.round(ms(e)/3600000*e.rate);
 const sum=l=>l.reduce((a,e)=>{a.ms+=ms(e);a.m+=amt(e);return a},{ms:0,m:0});
@@ -430,7 +432,7 @@ function rDaily(){
   <div class="hero"><div class="ktop"><span class="klbl">Is din ka hisaab</span><span class="kchip">${n} ${n===1?'entry':'entries'}</span></div>
   <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(s.m))}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Total waqt</span><b>${dur(s.ms)}</b></div></div>`+
-  (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${tm(e.end_at)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
+  (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${et(e)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
   $('#day').onchange=ev=>{day=ev.target.value||ymd(new Date());rDaily()};
   bindE();
 }
@@ -474,7 +476,7 @@ function openForm(e){
     const a=new Date(e.start_at),b=new Date(e.end_at);
     $('#fc').value=e.customer_id; $('#fd').value=ymd(a);
     $('#fs').value=p2(a.getHours())+':'+p2(a.getMinutes());
-    $('#fe').value=p2(b.getHours())+':'+p2(b.getMinutes()); $('#fr').value=e.rate;
+    $('#fe').value=isRun(e)?'':p2(b.getHours())+':'+p2(b.getMinutes()); $('#fr').value=e.rate;
   }else{
     const c=(view==='detail'&&customers.find(x=>x.id===cid))||customers[0];
     $('#fc').value=c.id; $('#fd').value=view==='daily'?day:ymd(new Date());
@@ -681,7 +683,7 @@ async function drawKhata(c){
     const g=days[d], es=g.e.slice().sort((a,b)=>new Date(a.start_at)-new Date(b.start_at));
     if(es.length){
       const t=sum(es); bal+=t.m;
-      rows.push({d:sd(d),t:compact?[es.length+' entry']:es.map(e=>tm(e.start_at)+' - '+tm(e.end_at)+(disc(e)?' (riyat)':'')),h:hh(t.ms),a:rs(t.m),b:rs(bal),k:'e'});
+      rows.push({d:sd(d),t:compact?[es.length+' entry']:es.map(e=>tm(e.start_at)+' - '+et(e)+(disc(e)?' (riyat)':'')),h:hh(t.ms),a:rs(t.m),b:rs(bal),k:'e'});
     }
     g.p.forEach(z=>{
       if(z.applied) bal-=z.amount;
@@ -785,17 +787,30 @@ const ps=c=>{
   return{jama:pa+pp,pa,pp,bq:k.m-pa,bms:Math.max(0,k.ms-pms)};
 };
 
+/* ---- Tubewell shuru / band (timer nahi, sirf shuru aur band ka waqt likhta ha) ---- */
+function startTW(c){
+  if(entries.some(e=>e.customer_id===c.id&&isRun(e))) return toast('Ye tubewell pehle se chal raha ha');
+  const now=new Date().toISOString();
+  mut('entries','ins',{id:uid(),customer_id:c.id,start_at:now,end_at:now,rate:c.rate,amount:null});
+  toast('Tubewell shuru: '+tm(now));
+}
+function stopTW(e){
+  const end=new Date(Math.max(Date.now(),new Date(e.start_at).getTime()+1000)).toISOString();
+  mut('entries','upd',{id:e.id,end_at:end});
+  toast('Band: '+tm(e.start_at)+' se '+tm(end)+' = '+dur(ms(e))+' = '+rs(amt(e)));
+}
+
 function rKhata(){
   let tq=0,tms=0;
   customers.forEach(c=>{const k=cs(c),q=ps(c);tq+=Math.max(0,q.bq);tms+=k.ms});
-  const n=customers.length;
+  const n=customers.length, runSet=new Set(entries.filter(isRun).map(e=>e.customer_id));
   let h=`<div class="hero khero">
   <div class="ktop"><span class="klbl">Kul baqaya</span><span class="kchip">${n} ${n===1?'banda':'bande'}</span></div>
   <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(tq))}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Kul waqt</span><b>${dur(tms)}</b></div></div>
   <div class="sec"><h2>Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
   h+=n?customers.map(c=>{const k=cs(c),q=ps(c),clr=q.bq>0?'':' clr';
-    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span></div></div><div class="end"><b class="amt${clr}">${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`}).join('')
+    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span>${runSet.has(c.id)?'<span class="rn">&#9679; Chal raha ha</span>':''}</div></div><div class="end"><b class="amt${clr}">${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`}).join('')
     :'<div class="empty">Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.</div>';
   $('#main').innerHTML=h;
   $('#addC').onclick=()=>openCust(null);
@@ -1323,7 +1338,7 @@ function paintTrash(){
   $('#trT').textContent='Recycle bin ('+a.length+')';
   box.innerHTML=a.length?a.map(it=>{
     let d;
-    if(it.k==='e') d=esc(it.cn||'')+' &middot; '+sd(ymd(new Date(it.row.start_at)))+' '+tm(it.row.start_at)+'–'+tm(it.row.end_at)+' &middot; '+rs(amt(it.row));
+    if(it.k==='e') d=esc(it.cn||'')+' &middot; '+sd(ymd(new Date(it.row.start_at)))+' '+tm(it.row.start_at)+'–'+et(it.row)+' &middot; '+rs(amt(it.row));
     else if(it.k==='p') d=esc(it.cn||'')+' &middot; Jama '+rs(it.row.amount)+' &middot; '+sd(ymd(new Date(it.row.paid_at)));
     else d=esc(it.row.name)+' &middot; '+it.es.length+' entries, '+it.ps.length+' jama';
     return `<div class="row" style="padding:10px 0;border-top:1px solid var(--ln)"><div class="grow"><b>${it.k==='e'?'Entry':it.k==='p'?'Jama entry':'Banda'}</b><div class="mu">${d}</div><div class="mu">${agoTxt(Date.now()-it.at)} delete hui</div></div><div style="display:flex;flex-direction:column;gap:6px"><button class="btn s" style="width:auto;margin:0;padding:8px 12px" data-tr="${it.id}">Wapas lao</button><button class="btn d" style="width:auto;margin:0;padding:8px 12px" data-tx="${it.id}">Hatayen</button></div></div>`}).join('')
@@ -1349,7 +1364,7 @@ async function doBackup(){
 const csvq=v=>{v=String(v==null?'':v);return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
 async function doCsv(){
   const it=[];
-  entries.forEach(e=>it.push({n:cn(e.customer_id),t:new Date(e.start_at),r:[cn(e.customer_id),ymd(new Date(e.start_at)),'Entry',tm(e.start_at),tm(e.end_at),hh(ms(e)),e.rate,amt(e),'']}));
+  entries.forEach(e=>it.push({n:cn(e.customer_id),t:new Date(e.start_at),r:[cn(e.customer_id),ymd(new Date(e.start_at)),'Entry',tm(e.start_at),isRun(e)?'':tm(e.end_at),hh(ms(e)),e.rate,amt(e),'']}));
   payments.forEach(z=>it.push({n:cn(z.customer_id),t:new Date(z.paid_at),r:[cn(z.customer_id),ymd(new Date(z.paid_at)),'Jama','','','',z.rate||'',z.amount,z.applied?'Haan':'Nahi']}));
   it.sort((a,b)=>a.n.localeCompare(b.n)||a.t-b.t);
   const rows=[['Banda','Tarikh','Qism','Kab chalai','Kab band ki','Ghantay','Rate','Rakam (Rs)','Hisaab se minus'],...it.map(x=>x.r),[],['KHULASA'],['Banda','Total ghantay','Total hisaab (Rs)','Jama (Rs)','Baqaya (Rs)']];
@@ -1504,6 +1519,7 @@ function rDetail(){
   const c=customers.find(x=>x.id===cid);
   if(!c){view='khata';return render()}
   const k=cs(c), q=ps(c), all=flt==='all', asc=localStorage.getItem('tk_sort')==='asc';
+  const run=entries.find(e=>e.customer_id===c.id&&isRun(e));
   const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   const days={},D=d=>days[d]=days[d]||{e:[],p:[]};
   entries.filter(e=>e.customer_id===c.id).forEach(e=>D(ymd(new Date(e.start_at))).e.push(e));
@@ -1519,7 +1535,7 @@ function rDetail(){
   const ord=(asc?sel:sel.slice().reverse()).filter(r=>!(r.k==='p'&&r.z.applied));
   const row=(r,i)=>{
     const alt=i%2?' alt':'';
-    if(r.k==='e') return `<div class="kr${alt}"><div class="kd">${sd(r.d)}</div><div>${r.es.map(e=>`<div class="rg" data-e="${e.id}"><b>${tm(e.start_at)}</b><span class="to">&rarr; ${tm(e.end_at)}${disc(e)?' <span class="mu">(riyat)</span>':''}</span></div>`).join('')}</div><div>${hh(r.ms)}</div><div><b>${num(r.a)}</b></div><div>${num(r.b)}</div></div>`;
+    if(r.k==='e') return `<div class="kr${alt}"><div class="kd">${sd(r.d)}</div><div>${r.es.map(e=>`<div class="rg" data-e="${e.id}"><b>${tm(e.start_at)}</b><span class="to">&rarr; ${et(e)}${disc(e)?' <span class="mu">(riyat)</span>':''}</span></div>`).join('')}</div><div>${hh(r.ms)}</div><div><b>${num(r.a)}</b></div><div>${num(r.b)}</div></div>`;
     return `<div class="kr pay${alt}" data-p="${r.z.id}"><div class="kd">${sd(r.d)}</div><div><b>Jama pesay</b>${r.z.applied?'':'<br><span class="mu">(abhi minus nahi)</span>'}</div><div></div><div><b>${r.z.applied?'- ':''}${num(r.z.amount)}</b></div><div>${num(r.b)}</div></div>`;
   };
   const opn=(all&&k.o>0)?`<div class="kr opn" id="opn"><div></div><div><b>Pehle ka hisaab</b><br><span class="mu">(purani book)</span></div><div></div><div><b>${num(k.o)}</b></div><div>${num(k.o)}</div></div>`:'';
@@ -1530,6 +1546,7 @@ function rDetail(){
   <div><small>Total paise (hisaab)</small><b>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
   ${q.pp>0?`<div><small>Jama (minus nahi)</small><b>${rs(q.pp)}</b></div>`:''}
   <div class="hl"><small>Baqaya</small><b>${rs(q.bq)}</b><i>${dur(q.bms)} pani</i></div></div>
+  ${run?`<div class="runc"><div><b>Tubewell chal raha ha</b><small>Shuru: ${ymd(new Date(run.start_at))===ymd(new Date())?'':sd(ymd(new Date(run.start_at)))+', '}${tm(run.start_at)}</small></div><button class="stp" id="stopT">Band karo</button></div>`:`<button class="strt" id="startT"><span class="em">&#9654;</span> Tubewell shuru karein</button>`}
   <div class="bigb"><button class="bb w" id="addE"><span class="em">💧</span>Pani ki nayi entry</button><button class="bb g" id="payBtn"><span class="em">💰</span>Pesay jama karein</button></div>
   ${q.pp>0?`<div class="pend"><b>${rs(q.pp)}</b> jama hain, lekin abhi hisaab se kam nahi kiye<button class="btn" id="applyAll">Ab hisaab se kam karein</button></div>`:''}
   <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>
@@ -1544,6 +1561,8 @@ function rDetail(){
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
   document.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>openPay(payments.find(x=>x.id===el.dataset.p)));
   $('#addE').onclick=()=>openForm(null);
+  if($('#startT')) $('#startT').onclick=()=>startTW(c);
+  if($('#stopT')) $('#stopT').onclick=()=>stopTW(run);
   $('#payBtn').onclick=()=>openPay(null);
   $('#shotBtn').onclick=()=>openShot(customers.find(x=>x.id===cid));
   if($('#applyAll')) $('#applyAll').onclick=()=>{
