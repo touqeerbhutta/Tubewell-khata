@@ -432,7 +432,7 @@ function rDaily(){
   <div class="hero"><div class="ktop"><span class="klbl">Is din ka hisaab</span><span class="kchip">${n} ${n===1?'entry':'entries'}</span></div>
   <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(s.m))}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Total waqt</span><b>${dur(s.ms)}</b></div></div>`+
-  (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${et(e)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
+  (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${et(e)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b><button class="xd" data-del="${e.id}" aria-label="Delete">\u{1F5D1}</button></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
   $('#day').onchange=ev=>{day=ev.target.value||ymd(new Date());rDaily()};
   bindE();
 }
@@ -787,18 +787,62 @@ const ps=c=>{
   return{jama:pa+pp,pa,pp,bq:k.m-pa,bms:Math.max(0,k.ms-pms)};
 };
 
-/* ---- Tubewell shuru / band (timer nahi, sirf shuru aur band ka waqt likhta ha) ---- */
-function startTW(c){
-  if(entries.some(e=>e.customer_id===c.id&&isRun(e))) return toast('Ye tubewell pehle se chal raha ha');
-  const now=new Date().toISOString();
-  mut('entries','ins',{id:uid(),customer_id:c.id,start_at:now,end_at:now,rate:c.rate,amount:null});
-  toast('Tubewell shuru: '+tm(now));
+/* ---- Tubewell shuru / band: waqt aap khud likhte hain (timer nahi) ---- */
+document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="tw" hidden><div class="sheet">
+<h3 id="twT">Tubewell shuru karein</h3>
+<div class="mu" id="twB" style="margin-bottom:6px"></div>
+<label>Tarikh</label><input type="date" id="twd">
+<label id="twL">Shuru ka waqt</label><input type="time" id="twt">
+<div class="prev" id="twp">-</div>
+<button class="btn" id="twSave">Save karein</button>
+<button class="btn s" id="twX">Band karein</button>
+</div></div>`);
+let twC=null,twE=null;
+function twVal(){
+  const d=$('#twd').value,t=$('#twt').value; if(!d||!t) return null;
+  const x=new Date(d+'T'+t); return isNaN(x)?null:x;
 }
-function stopTW(e){
-  const end=new Date(Math.max(Date.now(),new Date(e.start_at).getTime()+1000)).toISOString();
-  mut('entries','upd',{id:e.id,end_at:end});
-  toast('Band: '+tm(e.start_at)+' se '+tm(end)+' = '+dur(ms(e))+' = '+rs(amt(e)));
+function twCalc(){
+  const x=twVal(), p=$('#twp');
+  if(!x){p.textContent='-';return null}
+  if(!twE){p.textContent='Shuru: '+sd($('#twd').value)+', '+tm(x.toISOString());return x}
+  const st=new Date(twE.start_at), m=x-st;
+  if(m<=0){p.textContent='Band ka waqt shuru ('+tm(twE.start_at)+') ke baad ka hona chahiye';return null}
+  p.textContent=dur(m)+'  =  '+rs(Math.round(m/3600000*twE.rate));
+  return x;
 }
+function openTW(c,run){
+  twC=c; twE=run||null;
+  const now=new Date();
+  $('#twT').textContent=run?'Tubewell band karein':'Tubewell shuru karein';
+  $('#twL').textContent=run?'Band hone ka waqt':'Shuru ka waqt';
+  $('#twB').textContent=run?(c.name+' \u00b7 shuru: '+sd(ymd(new Date(run.start_at)))+', '+tm(run.start_at)):c.name;
+  $('#twd').value=ymd(now); $('#twt').value=p2(now.getHours())+':'+p2(now.getMinutes());
+  twCalc(); $('#tw').hidden=false;
+}
+$('#twd').oninput=$('#twt').oninput=twCalc;
+$('#twX').onclick=()=>$('#tw').hidden=true;
+$('#twSave').onclick=()=>{
+  const x=twCalc(); if(!x) return toast(twE?'Band ka waqt theek likhein':'Tarikh aur waqt likhein');
+  const iso=x.toISOString();
+  $('#tw').hidden=true;
+  if(twE){ const e=twE; mut('entries','upd',{id:e.id,end_at:iso}); toast('Band: '+dur(ms(e))+' = '+rs(amt(e))); }
+  else{
+    if(entries.some(e=>e.customer_id===twC.id&&isRun(e))) return toast('Ye tubewell pehle se chal raha ha');
+    mut('entries','ins',{id:uid(),customer_id:twC.id,start_at:iso,end_at:iso,rate:twC.rate,amount:null});
+    toast('Tubewell shuru: '+tm(iso));
+  }
+};
+
+/* ---- har pani ki entry ke saath delete button ---- */
+document.addEventListener('click',ev=>{
+  const b=ev.target.closest&&ev.target.closest('[data-del]'); if(!b) return;
+  ev.stopPropagation(); ev.preventDefault();
+  const e=entries.find(x=>x.id===b.dataset.del); if(!e) return;
+  const txt=tm(e.start_at)+' se '+et(e)+(isRun(e)?'':' ('+dur(ms(e))+', '+rs(amt(e))+')');
+  if(!confirm('Ye pani ki entry delete karein?\n'+cn(e.customer_id)+' \u00b7 '+txt)) return;
+  mut('entries','del',{id:e.id}); toast('Entry delete ho gayi');
+},true);
 
 function rKhata(){
   let tq=0,tms=0;
@@ -1535,7 +1579,7 @@ function rDetail(){
   const ord=(asc?sel:sel.slice().reverse()).filter(r=>!(r.k==='p'&&r.z.applied));
   const row=(r,i)=>{
     const alt=i%2?' alt':'';
-    if(r.k==='e') return `<div class="kr${alt}"><div class="kd">${sd(r.d)}</div><div>${r.es.map(e=>`<div class="rg" data-e="${e.id}"><b>${tm(e.start_at)}</b><span class="to">&rarr; ${et(e)}${disc(e)?' <span class="mu">(riyat)</span>':''}</span></div>`).join('')}</div><div>${hh(r.ms)}</div><div><b>${num(r.a)}</b></div><div>${num(r.b)}</div></div>`;
+    if(r.k==='e') return `<div class="kr${alt}"><div class="kd">${sd(r.d)}</div><div>${r.es.map(e=>`<div class="rg" data-e="${e.id}"><b>${tm(e.start_at)}</b><button class="xd" data-del="${e.id}" aria-label="Delete">\u{1F5D1}</button><span class="to">&rarr; ${et(e)}${disc(e)?' <span class="mu">(riyat)</span>':''}</span></div>`).join('')}</div><div>${hh(r.ms)}</div><div><b>${num(r.a)}</b></div><div>${num(r.b)}</div></div>`;
     return `<div class="kr pay${alt}" data-p="${r.z.id}"><div class="kd">${sd(r.d)}</div><div><b>Jama pesay</b>${r.z.applied?'':'<br><span class="mu">(abhi minus nahi)</span>'}</div><div></div><div><b>${r.z.applied?'- ':''}${num(r.z.amount)}</b></div><div>${num(r.b)}</div></div>`;
   };
   const opn=(all&&k.o>0)?`<div class="kr opn" id="opn"><div></div><div><b>Pehle ka hisaab</b><br><span class="mu">(purani book)</span></div><div></div><div><b>${num(k.o)}</b></div><div>${num(k.o)}</div></div>`:'';
@@ -1561,8 +1605,8 @@ function rDetail(){
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
   document.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>openPay(payments.find(x=>x.id===el.dataset.p)));
   $('#addE').onclick=()=>openForm(null);
-  if($('#startT')) $('#startT').onclick=()=>startTW(c);
-  if($('#stopT')) $('#stopT').onclick=()=>stopTW(run);
+  if($('#startT')) $('#startT').onclick=()=>openTW(c,null);
+  if($('#stopT')) $('#stopT').onclick=()=>openTW(c,run);
   $('#payBtn').onclick=()=>openPay(null);
   $('#shotBtn').onclick=()=>openShot(customers.find(x=>x.id===cid));
   if($('#applyAll')) $('#applyAll').onclick=()=>{
