@@ -759,15 +759,6 @@ document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="sm" hidden>
 <button class="btn" id="sShare">Share / Save karein</button>
 <button class="btn s" id="sX">Band karein</button></div></div>`);
 let shotURL='', shotName='khata';
-async function openShot(c){
-  if(!c) return;
-  $('#sm').hidden=false; $('#sMsg').textContent='Tasveer ban rahi hai...'; $('#shot').removeAttribute('src');
-  try{
-    const cv=await drawKhata(c); shotURL=cv.toDataURL('image/png');
-    shotName='khata-'+(c.name.replace(/[^\w]+/g,'-').replace(/^-|-$/g,'')||'banda')+'-'+ymd(new Date());
-    $('#shot').src=shotURL; $('#sMsg').textContent='Tayyar hai. Neeche "Share / Save karein" dabayen.';
-  }catch(e){$('#sMsg').textContent='Masla: '+(e.message||e)}
-}
 $('#sX').onclick=()=>{$('#sm').hidden=true;$('#shot').removeAttribute('src');shotURL=''};
 $('#sShare').onclick=async()=>{
   if(!shotURL) return;
@@ -782,8 +773,8 @@ const _render=render;
 render=function(){
   _render();
   if(view==='detail'&&$('#payBtn')&&!$('#shotBtn')){
-    $('#payBtn').insertAdjacentHTML('afterend','<button class="btn s" id="shotBtn" style="margin:0 0 12px">Khata ki tasveer banayen</button>');
-    $('#shotBtn').onclick=()=>openShot(customers.find(x=>x.id===cid));
+    $('#payBtn').insertAdjacentHTML('afterend','<button class="btn s" id="shotBtn" style="margin:0 0 12px">Gallery mein save karein</button>');
+    $('#shotBtn').onclick=()=>saveShot(customers.find(x=>x.id===cid));
   }
 };
 
@@ -1579,8 +1570,6 @@ async function openReceipt(z){
     $('#shot').src=shotURL; $('#sMsg').textContent='Tayyar hai. Neeche "Share / Save karein" dabayen.';
   }catch(e){$('#sMsg').textContent='Masla: '+(e.message||e)}
 }
-const _os10=openShot;
-openShot=function(c){$('#sm h3').textContent='Khata ki tasveer';return _os10(c)};
 
 $('#pX').insertAdjacentHTML('beforebegin','<button class="btn s" id="pRec" hidden>Rasid banayein</button>');
 $('#pRec').onclick=()=>{const z=payments.find(p=>p.id===payEdit); if(z){$('#pm').hidden=true;openReceipt(z)}};
@@ -1657,7 +1646,7 @@ function rDetail(){
   ${body||'<div class="empty" style="padding:22px;border:0">Is muddat mein koi entry nahi.</div>'}
   <div class="kr tot"><div>${all?'Kul':'Total'}</div><div></div><div>${hh(all?k.ms:tms)}</div><div>${num(all?k.m:tam)}</div><div>${num(q.bq)}</div></div></div>
   ${payments.some(z=>z.customer_id===c.id)?`<button class="btn s" id="jhBtn" style="margin:0 0 10px"><span class="em">&#128176;</span> Jama ki list (theek / delete)</button>`:''}
-  <button class="btn s" id="shotBtn" style="margin:0 0 10px"><span class="em">📷</span> Khata ki tasveer banayen</button>
+  <button class="btn s" id="shotBtn" style="margin:0 0 10px"><span class="em">📷</span> Tasveer gallery mein save karein</button>
   <div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
@@ -1667,7 +1656,7 @@ function rDetail(){
   if($('#stopT')) $('#stopT').onclick=()=>openTW(c,run);
   $('#payBtn').onclick=()=>openPay(null);
   if($('#jhBtn')) $('#jhBtn').onclick=openJH;
-  $('#shotBtn').onclick=()=>openShot(customers.find(x=>x.id===cid));
+  $('#shotBtn').onclick=()=>saveShot(customers.find(x=>x.id===cid));
   if($('#applyAll')) $('#applyAll').onclick=()=>{
     if(!confirm('Jama pesay hisaab se minus kar dein?')) return;
     payments.filter(x=>x.customer_id===cid&&!x.applied).forEach(x=>mut('payments','upd',{id:x.id,applied:true}));
@@ -1693,42 +1682,66 @@ function galPlugin(){
   return (C.Plugins&&C.Plugins.GallerySaver)||(C.registerPlugin?C.registerPlugin('GallerySaver'):null);
 }
 const galName=c=>'Khata_'+(c.name.replace(/[^\p{L}\p{N}]+/gu,'_').replace(/^_|_$/g,'')||'banda')+'_'+ymd(new Date());
+/* jin bandon ki tasveer abhi save honi baqi ha (phone mein mehfooz, taake app band ho jaye to bhi na bhoolay) */
+const galPend=()=>{try{return JSON.parse(localStorage.getItem('tk_gal_pend')||'[]')}catch(e){return[]}};
+const galPendSet=a=>{try{localStorage.setItem('tk_gal_pend',JSON.stringify([...new Set(a)]))}catch(e){}};
 let _galQ=[], _galBusy=false, _galT={};
+async function galSaveOne(c,loud){
+  const G=galPlugin();
+  if(!G){ galSetSt(false,'Nayi APK ek baar install karni hogi'); if(loud) toast('Gallery mein save ke liye nayi APK ek baar install karein'); return 'noplugin' }
+  try{
+    const cv=await drawKhata(c), b64=cv.toDataURL('image/png').split(',')[1]; cv.width=cv.height=0;
+    await G.save({base64:b64,name:galName(c)});
+    galSetSt(true,c.name); toast(loud?'Tasveer gallery mein save ho gayi \u2713':'Tasveer gallery mein save \u2713'); return 'ok';
+  }catch(e){
+    const m=String((e&&e.message)||e), old=/UNIMPLEMENTED|not implemented/i.test(m);
+    galSetSt(false,old?'Nayi APK ek baar install karni hogi':m);
+    toast(old?'Gallery mein save ke liye nayi APK ek baar install karein':'Gallery mein save nahi hua: '+m.slice(0,70));
+    return old?'noplugin':'fail';
+  }
+}
+async function saveShot(c){ if(!c) return; toast('Tasveer ban rahi ha...'); await galSaveOne(c,true) }
 async function galRun(){
   if(_galBusy) return; _galBusy=true;
   try{
     while(_galQ.length){
-      const id=_galQ.shift(), c=customers.find(x=>x.id===id); if(!c) continue;
-      const G=galPlugin();
-      if(!G){galSetSt(false,'Nayi APK ek baar install karni hogi');break}
-      try{
-        const cv=await drawKhata(c), b64=cv.toDataURL('image/png').split(',')[1]; cv.width=cv.height=0;
-        await G.save({base64:b64,name:galName(c)});
-        galSetSt(true,c.name); toast('Tasveer gallery mein save ✓');
-      }catch(e){
-        const m=String((e&&e.message)||e);
-        galSetSt(false,/UNIMPLEMENTED|not implemented/i.test(m)?'Nayi APK ek baar install karni hogi':m);
-        toast('Gallery backup nahi hua: '+m.slice(0,60));
-      }
-      await new Promise(r=>setTimeout(r,400));
+      const id=_galQ.shift(), c=customers.find(x=>x.id===id);
+      if(!c){ galPendSet(galPend().filter(x=>x!==id)); continue }
+      const r=await galSaveOne(c,false);
+      if(r==='ok') galPendSet(galPend().filter(x=>x!==id));
+      else if(r==='noplugin'){ _galQ=[]; galPendSet([]); break }   // purani APK: baar baar koshish na ho
+      await new Promise(r2=>setTimeout(r2,400));
     }
   }finally{_galBusy=false}
 }
 function galSchedule(id){
+  galPendSet(galPend().concat(id));
   clearTimeout(_galT[id]);
-  _galT[id]=setTimeout(()=>{ if(!_galQ.includes(id)) _galQ.push(id); galRun() },4000);
+  _galT[id]=setTimeout(()=>{ delete _galT[id]; if(!_galQ.includes(id)) _galQ.push(id); galRun() },2500);
 }
+function galFlushNow(){   // app band hone se pehle: intezar nahi, foran save
+  Object.keys(_galT).forEach(id=>{clearTimeout(_galT[id]);delete _galT[id];if(!_galQ.includes(id))_galQ.push(id)});
+  if(_galQ.length) galRun();
+}
+function galResume(){     // app dobara khulne par jo baqi tha wo save karo
+  if(!galOn()||_galBusy) return;
+  galPend().forEach(id=>{if(!_galQ.includes(id)&&!_galT[id])_galQ.push(id)});
+  if(_galQ.length) galRun();
+}
+document.addEventListener('visibilitychange',()=>{ document.hidden?galFlushNow():galResume() });
+setTimeout(galResume,3000);
 const _mutGal=mut;
 mut=function(t,op,row){
-  let id=null;
+  const ids=new Set();
   if(galOn()&&(t==='entries'||t==='payments')){
     const src=(t==='entries'?entries:payments).find(x=>x.id===row.id);
-    id=row.customer_id||(src&&src.customer_id)||null;
+    if(row.customer_id) ids.add(row.customer_id);
+    if(src&&src.customer_id) ids.add(src.customer_id);   // banda badla ho to purane banday ki tasveer bhi
   }
   _mutGal.apply(this,arguments);
-  if(!id) return;
+  if(!ids.size) return;
   if(t==='entries'&&op!=='del'){const e=entries.find(x=>x.id===row.id); if(e&&isRun(e)) return} // chalta hua tubewell: band hone par save hoga
-  galSchedule(id);
+  ids.forEach(galSchedule);
 };
 const _rsGal=rSettings;
 rSettings=function(){
