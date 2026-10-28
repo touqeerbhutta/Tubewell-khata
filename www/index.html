@@ -338,16 +338,23 @@ function setStat(){const s=$('#stat'),off=!navigator.onLine;s.textContent=(off?'
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify({customers,entries,payments,Q}))}catch(e){}}
 function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LS)||'null');if(d){customers=d.customers||[];entries=d.entries||[];payments=d.payments||[];Q=d.Q||[]}}catch(e){}}
 const isNet=er=>!navigator.onLine||/fetch|network/i.test((er&&er.message)||'');
+/* ---- Sync safety: jo tabdeeli server qabool na kare wo HATTI NAHI, FQ mein mehfooz rehti ha ---- */
+let FQ=(()=>{try{return JSON.parse(localStorage.getItem('tk_failq')||'[]')}catch(e){return[]}})(), _fqSilent=false;
+function fqSave(){try{localStorage.setItem('tk_failq',JSON.stringify(FQ))}catch(e){} if(typeof fqUi==='function')fqUi(); if(typeof setStat==='function')setStat()}
+function fqAdd(f,err){
+  FQ.push({t:f.t,op:f.op,row:f.row,err:String((err&&err.message)||err||'Pata nahi').slice(0,200),ts:Date.now()});
+  fqSave(); if(!_fqSilent) toast('\u26A0 Ek tabdeeli server tak nahi pahunchi. Upar dekhein.');
+}
 
 /* ---- login ---- */
 const mail=u=>u.trim().toLowerCase().replace(/\s+/g,'')+'@tubewell.app';
 $('#bLogin').onclick=()=>doAuth(false);
 $('#bSign').onclick=()=>doAuth(true);
 $('#bOut').onclick=async()=>{
-  if(Q.length&&!confirm(Q.length+' tabdeeliyan abhi sync nahi hui, logout se zaya ho jayengi. Pakka?')) return;
+  if((Q.length+FQ.length)&&!confirm((Q.length+FQ.length)+' tabdeeliyan abhi sync nahi hui, logout se zaya ho jayengi. Pakka?')) return;
   try{await sb.auth.signOut()}catch(e){}
   if(ch){sb.removeChannel(ch);ch=null}
-  localStorage.removeItem('tk_uid');localStorage.removeItem(LS);
+  localStorage.removeItem('tk_uid');localStorage.removeItem(LS);FQ=[];fqSave();
   customers=[];entries=[];payments=[];Q=[];boot();
 };
 async function boot(){
@@ -381,9 +388,9 @@ async function loadAll(){
   }
   const pr=await sb.from('payments').select('*').order('paid_at',{ascending:false});
   if(pr.error&&isNet(pr.error)) return render();
-  if(!pr.error) payments=pr.data;
+  const newPay=pr.error?null:pr.data;
   if(_mseq!==s0||Q.length) return render();
-  customers=c.data; entries=all; _lastLoad=Date.now(); saveLocal(); render();
+  customers=c.data; entries=all; if(newPay) payments=newPay; fqApply(); _lastLoad=Date.now(); saveLocal(); render();
 }
 function mut(t,op,row){
   _mseq++;
@@ -1054,7 +1061,7 @@ async function remoteLogout(){
   try{await sb.auth.signOut({scope:'local'})}catch(e){}
   if(ch){sb.removeChannel(ch);ch=null}
   if(dch){sb.removeChannel(dch);dch=null}
-  ['tk_uid',LS,'tk_name','tk_login'].forEach(k=>localStorage.removeItem(k));
+  ['tk_uid',LS,'tk_name','tk_login'].forEach(k=>localStorage.removeItem(k));FQ=[];fqSave();
   customers=[];entries=[];payments=[];Q=[];
   rlBusy=false; boot(); toast('Is mobile ko doosre mobile se logout kar diya gaya');
 }
@@ -1374,13 +1381,13 @@ async function flush(){
           for(let i=0;i<n;i++){
             const q=await sb.from(f.t).upsert(Q[i].row);
             if(q.error&&isNet(q.error)){r=q;break}
-            if(q.error) toast('Sync masla: '+q.error.message);
+            if(q.error) fqAdd(Q[i],q.error);
           }
           if(!(r.error&&isNet(r.error))) r={error:null};
         }
       }else if(f.op==='upd'){const {id,...rest}=f.row; r=await sb.from(f.t).update(rest).eq('id',id)}
       else r=await sb.from(f.t).delete().eq('id',f.row.id);
-      if(r.error){ if(isNet(r.error)) break; toast('Sync masla: '+r.error.message) }
+      if(r.error){ if(isNet(r.error)) break; fqAdd(f,r.error) }
       Q.splice(0,n); saveLocal(); setStat();
     }
   }catch(e){}finally{flushing=false;setStat()}
@@ -1742,6 +1749,58 @@ rSettings=function(){
     toast('Backup shuru: '+customers.length+' bande'); galRun();
   };
 };
+
+/* ---- Sync safety UI: banner, list, dobara koshish ---- */
+function fqApply(){
+  FQ.forEach(f=>{
+    const arr=f.t==='customers'?customers:f.t==='payments'?payments:entries;
+    if(f.op==='ins'){ if(!arr.some(x=>x.id===f.row.id)) arr.push(Object.assign({},f.row)) }
+    else if(f.op==='upd'){ const o=arr.find(x=>x.id===f.row.id); if(o) Object.assign(o,f.row) }
+    else if(f.op==='del'){ const i=arr.findIndex(x=>x.id===f.row.id); if(i>-1) arr.splice(i,1) }
+  });
+  if(FQ.some(f=>f.t==='customers')) customers.sort(byName);
+}
+function fqDesc(f){
+  const nm=id=>(customers.find(x=>x.id===id)||{}).name||'?';
+  const how={ins:'Nayi',upd:'Badli hui',del:'Delete ki hui'}[f.op]||'';
+  if(f.t==='entries'){const e=entries.find(x=>x.id===f.row.id)||f.row; return how+' pani entry \u00b7 '+nm(e.customer_id||f.row.customer_id)}
+  if(f.t==='payments'){const z=payments.find(x=>x.id===f.row.id)||f.row; return how+' jama \u00b7 '+nm(z.customer_id||f.row.customer_id)+(z.amount!=null?' \u00b7 '+rs(z.amount):'')}
+  return how+' banda \u00b7 '+(f.row.name||nm(f.row.id));
+}
+function fqRetry(silent){
+  if(!FQ.length) return;
+  const items=FQ.map(({t,op,row})=>({t,op,row})); FQ=[]; fqSave();
+  _fqSilent=!!silent; Q.unshift(...items); saveLocal(); setStat();
+  Promise.resolve(flush()).finally(()=>{_fqSilent=false; if(!silent) toast(FQ.length?'Abhi bhi '+FQ.length+' tabdeeli nahi gayi':'Sab tabdeeliyan sync ho gayin \u2713')});
+}
+document.querySelector('header').insertAdjacentHTML('afterend',`<div id="fqBar" hidden><span id="fqT"></span><button id="fqR">Dobara koshish</button><button id="fqV">Dekhein</button></div>`);
+document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="fqs" hidden><div class="sheet"><h3>\u26A0 Sync nahi hui</h3>
+<div class="mu">Ye tabdeeliyan aap ke phone mein mehfooz hain, lekin server ne qabool nahi kin. Pehle "Sab dobara bhejein" aazmayen.</div>
+<div id="fqL" style="max-height:44vh;overflow:auto;margin:10px 0"></div>
+<button class="btn" id="fqAll">Sab dobara bhejein</button><button class="btn s" id="fqX">Band karein</button></div></div>`);
+function fqUi(){
+  const b=document.getElementById('fqBar'); if(!b) return;
+  b.hidden=!FQ.length; document.getElementById('fqT').textContent='\u26A0\uFE0F '+FQ.length+(FQ.length===1?' tabdeeli':' tabdeeliyan')+' server tak nahi pahunchi';
+}
+function fqList(){
+  const L=document.getElementById('fqL');
+  L.innerHTML=FQ.length?FQ.map((f,i)=>`<div class="card"><b>${esc(fqDesc(f))}</b><div class="mu" style="font-size:12.5px;margin-top:3px">${esc(f.err)}</div><button class="btn d" data-fqd="${i}" style="margin-top:8px">Ye tabdeeli chhor dein</button></div>`).join(''):'<div class="empty">Koi masla nahi \u2713</div>';
+  L.querySelectorAll('[data-fqd]').forEach(el=>el.onclick=()=>{
+    if(!confirm('Ye tabdeeli server par kabhi nahi jayegi aur screen se bhi hat jayegi. Pakka?')) return;
+    FQ.splice(+el.dataset.fqd,1); fqSave(); fqList(); loadAll();
+  });
+}
+document.getElementById('fqR').onclick=()=>fqRetry(false);
+document.getElementById('fqV').onclick=()=>{fqList();document.getElementById('fqs').hidden=false};
+document.getElementById('fqX').onclick=()=>document.getElementById('fqs').hidden=true;
+document.getElementById('fqAll').onclick=()=>{document.getElementById('fqs').hidden=true;fqRetry(false)};
+fqUi();
+// app wapas khulne par (2 minute se zyada baad) khamoshi se ek dafa dobara koshish
+let _fqLast=0;
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&FQ.length&&navigator.onLine&&Date.now()-_fqLast>120000){_fqLast=Date.now();fqRetry(true)} });
+// header ki "Online" goli mein bhi dikhao
+const _setStatFq=setStat;
+setStat=function(){_setStatFq(); if(FQ.length){const s=$('#stat'); if(s) s.textContent+=' \u00b7 \u26A0'+FQ.length}};
 
 boot();
 </script>
