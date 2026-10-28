@@ -276,3 +276,64 @@ html.lite.glass header{background:linear-gradient(140deg,#073f49,#12a0b6)}
 .lv b{display:inline;font-size:22px;font-weight:800;font-variant-numeric:tabular-nums}
 [data-lv]{font-variant-numeric:tabular-nums}
 @media (prefers-color-scheme:dark){.xe{background:#1b3238;color:#5fd0e6}}
+
+/* =====================================================================
+   13 ---- Rang aur emojis (professional: rang ka matlab fix ha)
+   paani/waqt = neela | hisaab = jamni | paisa/theek = hara | baqi/intezar = narangi | khatra/delete = laal
+   ===================================================================== */
+:root{--c-water:#0ea5e9;--c-calc:#6366f1;--c-ok:#16794a;--c-warn:#f59e0b;--c-due:#c2410c;--c-blue:#2563eb;--c-purple:#7c3aed}
+
+/* detail tiles: upar patli rangeen patti + chhota emoji */
+.kb>div{position:relative;overflow:hidden}
+.kb>div::before{content:'';position:absolute;left:0;right:0;top:0;height:3px;background:var(--acc,#0e8fb5)}
+.kb>div:nth-child(1){--acc:var(--c-water)}
+.kb>div:nth-child(2){--acc:var(--c-calc)}
+.kb>div:nth-child(3):not(.hl){--acc:var(--c-warn)}
+.kb>div.hl::before{background:rgba(255,255,255,.4)}
+.kb>div:nth-child(1) small::before{content:'\1F4A7  '}
+.kb>div:nth-child(2) small::before{content:'\1F9FE  '}
+.kb>div:nth-child(3):not(.hl) small::before{content:'\23F3  '}
+.kb>div.hl small::before{content:'\1F4B0  '}
+.kb>div:nth-child(3):not(.hl) b{color:#b45309}
+
+/* home: bande ke card par haalat ki patti (narangi = baqaya baqi, hara = hisaab saaf) */
+.card[data-c]{position:relative;overflow:hidden}
+.card[data-c]::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:4px;border-radius:0 4px 4px 0;background:var(--c-warn)}
+.card[data-c].okc::before{background:#34a86a}
+.card[data-c].due .amt:not(.clr){color:var(--c-due)}
+.card[data-c] .cm span:nth-child(1)::before{content:'\1F4A7  '}
+.card[data-c] .cm span:nth-child(2)::before{content:'\1F9FE  '}
+.card[data-e] .cm span:nth-child(1)::before{content:'\1F552  '}
+.card[data-e] .cm span:nth-child(2)::before{content:'\1F4A7  '}
+.card[data-jp] .cn::before{content:'\1F4B0  '}
+.card[data-jp] .cm span:nth-child(1)::before{content:'\1F4C5  '}
+
+/* chalta hua tubewell */
+.rg .to.wr{color:#b45309;font-weight:700}
+.runc>div>b{display:flex;align-items:center;gap:6px}
+.runc>div>b::before{content:'\1F7E2'; font-size:12px}
+
+/* rozana ka hero neela, taake alag screen alag pehchani jaye */
+.hero.hdaily{background:linear-gradient(140deg,#15306a 0%,#2559d4 55%,#35a3e6 100%)}
+html.lite .hero.hdaily{background:linear-gradient(140deg,#15306a,#35a3e6)}
+
+/* neeche ke tabs: har tab ka apna rang */
+nav button[data-v=daily].on{color:var(--c-blue);background:rgba(37,99,235,.12)}
+nav button[data-v=settings].on{color:var(--c-purple);background:rgba(124,58,237,.12)}
+html.glass nav button[data-v=daily].on{background:rgba(37,99,235,.16)}
+html.glass nav button[data-v=settings].on{background:rgba(124,58,237,.16)}
+
+@media (prefers-color-scheme:dark){
+  .card[data-c].due .amt:not(.clr){color:#fb923c}
+  .kb>div:nth-child(3):not(.hl) b{color:#fbbf24}
+  .rg .to.wr{color:#fbbf24}
+  nav button[data-v=daily].on{color:#7aa7ff;background:rgba(122,167,255,.14)}
+  nav button[data-v=settings].on{color:#b79bff;background:rgba(183,155,255,.14)}
+  html.glass nav button[data-v=daily].on{background:rgba(122,167,255,.18)}
+  html.glass nav button[data-v=settings].on{background:rgba(183,155,255,.18)}
+}
+
+/* rozana card: lambi meta line amount ke upar na chadhe */
+.card.row .grow{min-width:0;flex:1}
+.card[data-e] .cm span{white-space:normal}
+.card.row .amt{flex:none}

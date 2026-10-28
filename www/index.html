@@ -429,7 +429,7 @@ function rDaily(){
   const list=entries.filter(e=>ymd(new Date(e.start_at))===day).sort((a,b)=>new Date(a.start_at)-new Date(b.start_at)), s=sum(list);
   const n=list.length;
   $('#main').innerHTML=`<input type="date" id="day" value="${day}" style="margin-bottom:14px">
-  <div class="hero"><div class="ktop"><span class="klbl">Is din ka hisaab</span><span class="kchip">${n} ${n===1?'entry':'entries'}</span></div>
+  <div class="hero hdaily"><div class="ktop"><span class="klbl">📅 Is din ka hisaab</span><span class="kchip">${n} ${n===1?'entry':'entries'}</span></div>
   <div class="big"><span class="cur">Rs</span>${_nf.format(Math.round(s.m))}</div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Total waqt</span><b>${dur(s.ms)}</b></div></div>`+
   (n?list.map(e=>`<div class="card row" data-e="${e.id}">${av(cn(e.customer_id))}<div class="grow"><b class="cn">${esc(cn(e.customer_id))}</b><div class="mu cm"><span>${tm(e.start_at)} se ${et(e)}</span><span>${dur(ms(e))}${disc(e)?' &middot; riyat':''}</span></div></div><b class="amt">${rs(amt(e))}</b><button class="xd xe" data-edit="${e.id}" aria-label="Edit">\u270F\uFE0F</button><button class="xd" data-del="${e.id}" aria-label="Delete">\u{1F5D1}</button></div>`).join(''):'<div class="empty">Is din ki koi entry nahi.</div>');
@@ -517,9 +517,9 @@ sb.auth.onAuthStateChange((ev,sess)=>{
 function rSettings(){
   const nm=localStorage.getItem('tk_name')||'', lg=localStorage.getItem('tk_login')||'', show=nm||lg||'Account';
   $('#main').innerHTML=`<div class="hero"><div class="hhead"><span class="av" style="background:${col(show)}">${esc((show.trim()[0]||'?').toUpperCase())}</span><div><b>${esc(show)}</b><small>Login: ${esc(lg)}</small></div></div></div>
-  <div class="card"><b>Apna naam</b><div class="mu">Ye naam app mein salam ke saath dikhega.</div>
+  <div class="card"><b>👤 Apna naam</b><div class="mu">Ye naam app mein salam ke saath dikhega.</div>
   <label>Naam</label><input id="sN" value="${esc(nm)}" maxlength="30"><button class="btn" id="sNs">Naam save karein</button></div>
-  <div class="card"><b>Password badlein</b>
+  <div class="card"><b>🔒 Password badlein</b>
   <label>Maujooda password</label><input id="sP0" type="password" autocomplete="current-password">
   <label>Naya password (kam az kam 6 harf)</label><input id="sP1" type="password" autocomplete="new-password">
   <label>Naya password dobara</label><input id="sP2" type="password" autocomplete="new-password">
@@ -897,13 +897,13 @@ function rKhata(){
   const n=customers.length, runMap=new Map(); entries.forEach(e=>{if(isRun(e)&&!runMap.has(e.customer_id))runMap.set(e.customer_id,e)});
   const heroRuns=[]; runMap.forEach((e,cid2)=>{const c2=customers.find(x=>x.id===cid2); if(c2) heroRuns.push([new Date(e.start_at).getTime(),e.rate,ps(c2).bq])});
   let h=`<div class="hero khero">
-  <div class="ktop"><span class="klbl">Kul baqaya</span><span class="kchip">${n} ${n===1?'banda':'bande'}</span></div>
+  <div class="ktop"><span class="klbl">💰 Kul baqaya</span><span class="kchip">${n} ${n===1?'banda':'bande'}</span></div>
   <div class="big"><span class="cur">Rs</span><span data-lv="hero" data-base="${tq}" data-runs='${JSON.stringify(heroRuns)}'>${_nf.format(Math.round(tq))}</span></div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Kul waqt</span><b data-lv="herot" data-base="${tms}" data-runs='${JSON.stringify(heroRuns)}'>${dur(tms)}</b></div></div>
-  <div class="sec"><h2>Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
-  h+=n?customers.map(c=>{const k=cs(c),q=ps(c),clr=q.bq>0?'':' clr';
-    const re=runMap.get(c.id);
-    return `<div class="card row" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span>${re?`<span class="rn" data-lv="h" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}">&#9679; Chal raha ha</span>`:''}</div></div><div class="end"><b class="amt${clr}"${re?` data-lv="hb" data-base="${q.bq}" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}"`:''}>${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`}).join('')
+  <div class="sec"><h2>👥 Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
+  h+=n?customers.map(c=>{const k=cs(c),q=ps(c),clr=(q.bq>0||runMap.has(c.id))?'':' clr';
+    const re=runMap.get(c.id), due=q.bq>0||!!re;
+    return `<div class="card row ${due?'due':'okc'}" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span>${re?`<span class="rn" data-lv="h" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}">&#9679; Chal raha ha</span>`:''}</div></div><div class="end"><b class="amt${clr}"${re?` data-lv="hb" data-base="${q.bq}" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}"`:''}>${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`}).join('')
     :'<div class="empty">Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.</div>';
   $('#main').innerHTML=h;
   $('#addC').onclick=()=>openCust(null);
@@ -988,7 +988,7 @@ const _rs=rSettings;
 rSettings=function(){
   _rs();
   const lg=localStorage.getItem('tk_login')||'';
-  $('#sNs').closest('.card').insertAdjacentHTML('afterend',`<div class="card"><b>Login username badlein</b>
+  $('#sNs').closest('.card').insertAdjacentHTML('afterend',`<div class="card"><b>🔑 Login username badlein</b>
   <div class="mu">Abhi: <b>${esc(lg)}</b>. Naye username se login hoga.</div>
   <label>Naya username</label><input id="sU" autocapitalize="none" autocomplete="off" maxlength="30">
   <label>Password (tasdeeq ke liye)</label><input id="sUp" type="password" autocomplete="current-password">
@@ -1593,7 +1593,7 @@ const _rsGl=rSettings;
 rSettings=function(){
   _rsGl();
   const g=glassGet();
-  $('#main').insertAdjacentHTML('afterbegin',`<div class="card" id="glCard"><b>Liquid Glass</b><div class="mu">Sheesha jaisa look (iOS style)</div>
+  $('#main').insertAdjacentHTML('afterbegin',`<div class="card" id="glCard"><b>✨ Liquid Glass</b><div class="mu">Sheesha jaisa look (iOS style)</div>
   <div class="chips" style="margin-top:10px"><button data-gl="1" class="${g.on?'on':''}">On</button><button data-gl="0" class="${g.on?'':'on'}">Off</button></div>
   <div id="glRow" style="${g.on?'':'opacity:.45;pointer-events:none'}"><label style="display:flex;justify-content:space-between"><span>Intensity</span><span id="glV">${g.v}%</span></label>
   <input type="range" id="glR" min="10" max="100" step="5" value="${g.v}"></div></div>`);
@@ -1644,7 +1644,7 @@ function rDetail(){
   <div class="bigb"><button class="bb w" id="addE"><span class="em">💧</span>Pani ki nayi entry</button><button class="bb g" id="payBtn"><span class="em">💰</span>Pesay jama karein</button></div>
   ${q.pp>0?`<div class="pend"><b>${rs(q.pp)}</b> jama hain, lekin abhi hisaab se kam nahi kiye<button class="btn" id="applyAll">Ab hisaab se kam karein</button></div>`:''}
   <div class="chips">${[['all','Sab'],['month','Is mahine'],['today','Aaj']].map(([x,l])=>`<button class="${flt===x?'on':''}" data-f="${x}">${l}</button>`).join('')}</div>
-  <div class="sec" style="margin:14px 4px 6px"><h2>Hisaab</h2><button class="lnk" id="sortB">${asc?'Purane pehle':'Naye pehle'} ⇅</button></div>
+  <div class="sec" style="margin:14px 4px 6px"><h2>🧾 Hisaab</h2><button class="lnk" id="sortB">${asc?'Purane pehle':'Naye pehle'} ⇅</button></div>
   <div class="hint">Har line ek din ka hisaab hai: kab pani diya, kitne ghantay, kitne paise, aur uske baad kitne paise baqi.</div>
   <div class="kt"><div class="kr kh"><div>Tarikh</div><div>Tafseel</div><div>Ghantay</div><div>Rakam</div><div>Baqaya</div></div>
   ${body||'<div class="empty" style="padding:22px;border:0">Is muddat mein koi entry nahi.</div>'}
@@ -1730,7 +1730,7 @@ rSettings=function(){
   const line=!window.Capacitor||!Capacitor.isNativePlatform||!Capacitor.isNativePlatform()?'Ye sirf Android app mein chalta ha.'
     :!G?'Is ke liye nayi APK ek baar install karni hogi.'
     :st?(st.ok?'Aakhri tasveer: '+esc(st.msg)+' \u00b7 '+tm(new Date(st.t).toISOString()):'Masla: '+esc(st.msg)):'Abhi tak koi tasveer save nahi hui.';
-  $('#main').insertAdjacentHTML('afterbegin',`<div class="card" id="galCard"><b>Gallery backup</b>
+  $('#main').insertAdjacentHTML('afterbegin',`<div class="card" id="galCard"><b>📸 Gallery backup</b>
   <div class="mu">Har pani ya jama ke baad us bande ke khate ki tasveer gallery ke "TubewellKhata" album mein khud save hoti ha.</div>
   <div class="chips" style="margin-top:10px"><button data-gal="1" class="${on?'on':''}">On</button><button data-gal="0" class="${on?'':'on'}">Off</button></div>
   <div class="mu" style="margin:8px 0">${line}</div>
