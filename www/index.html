@@ -8,7 +8,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#08505d">
-<script>(function(){var h=document.documentElement;try{var m=navigator.deviceMemory,c=navigator.hardwareConcurrency;if((m&&m<=2)||(c&&c<=4))h.classList.add('lite')}catch(e){}try{var g=JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":80}');h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}catch(e){}})()</script>
+<script>(function(){var h=document.documentElement;try{var L=JSON.parse(localStorage.getItem('tk_look')||'{}');if(L.acc&&L.acc!=='teal')h.setAttribute('data-acc',L.acc);if(L.dens==='compact')h.setAttribute('data-dens','compact');if(L.bg==='waves')h.setAttribute('data-bg','waves')}catch(e){}try{var m=navigator.deviceMemory,c=navigator.hardwareConcurrency;if((m&&m<=2)||(c&&c<=4))h.classList.add('lite')}catch(e){}try{var g=JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":80}');h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}catch(e){}})()</script>
 <title>Tubewell Khata</title>
 <script src="supabase.js"></script>
 <style>
@@ -625,18 +625,37 @@ const _r3=render;
 render=function(){_r3();decorate()};
 
 const avOldRef=avOld;
-const av=n=>{const c=customers.find(x=>x.name===n&&x.photo);return c?`<img class="av" src="${c.photo}" alt="">`:avOldRef(n)};
+let _csC=null;
+const cstyleAll=()=>_csC||(_csC=(()=>{try{return JSON.parse(localStorage.getItem('tk_cstyle')||'{}')}catch(e){return{}}})());
+function cstyleSet(id,st){const m=Object.assign({},cstyleAll()); if(st&&(st.c||st.e)) m[id]={c:st.c||'',e:st.e||''}; else delete m[id]; _csC=m; try{localStorage.setItem('tk_cstyle',JSON.stringify(m))}catch(e){}}
+const av=n=>{
+  const c=customers.find(x=>x.name===n&&x.photo);
+  if(c) return `<img class="av" src="${c.photo}" alt="">`;
+  const c2=customers.find(x=>x.name===n), st=c2&&cstyleAll()[c2.id];
+  if(st&&(st.c||st.e)) return `<span class="av" style="background:${st.c||col(n)}">${st.e?`<span class="avemoji">${st.e}</span>`:esc((n.trim()[0]||'?').toUpperCase())}</span>`;
+  return avOldRef(n)};
 document.head.insertAdjacentHTML('beforeend','<style>img.av{object-fit:cover}.ph{display:flex;align-items:center;gap:12px;margin-top:12px}.ph button{width:auto;margin:0;padding:10px 14px}#shot{width:100%;border-radius:10px;border:1px solid var(--ln);margin-top:10px}</style>');
 
 /* ---- bande ki photo ---- */
-let tmpPhoto;
+let tmpPhoto, tmpStyle={};
 $('#cmS').insertAdjacentHTML('beforebegin',`<label>Photo (zaroori nahi)</label>
 <div class="ph"><span id="cmPrev"></span><button class="btn s" id="cmPick" type="button">Photo chunein</button><button class="btn d" id="cmRm" type="button" hidden>Hatayen</button></div>
-<input type="file" accept="image/*" id="cmP" hidden>`);
+<input type="file" accept="image/*" id="cmP" hidden>
+<label>Rang aur emoji (sirf is phone mein)</label>
+<div class="sws" id="cmCol"></div><div class="sws" id="cmEmo"></div>`);
+const SW_COL=['','#0b5d6b','#2e7d32','#6a4c93','#c26a1b','#1565c0','#ad1457','#b45309','#475569'];
+const SW_EMO=['','🌾','🚜','🐄','💧','⭐','🏠','🌳','🥕','🍎','🐓','🔧'];
+function stylePick(){
+  $('#cmCol').innerHTML=SW_COL.map(c=>`<button type="button" class="sw ${c?'':'auto'} ${(tmpStyle.c||'')===c?'on':''}" data-sc="${c}" style="--sw:${c||'#ccc'}">${c?'':'Auto'}</button>`).join('');
+  $('#cmEmo').innerHTML=SW_EMO.map(e=>`<button type="button" class="sw em ${(tmpStyle.e||'')===e?'on':''}" data-se="${e}">${e||'\u2715'}</button>`).join('');
+  $('#cmCol').querySelectorAll('[data-sc]').forEach(b=>b.onclick=()=>{tmpStyle.c=b.dataset.sc;stylePick();setPrev(tmpPhoto===undefined?curPhoto():tmpPhoto,$('#cmN').value)});
+  $('#cmEmo').querySelectorAll('[data-se]').forEach(b=>b.onclick=()=>{tmpStyle.e=b.dataset.se;stylePick();setPrev(tmpPhoto===undefined?curPhoto():tmpPhoto,$('#cmN').value)});
+}
+const curPhoto=()=>{const c=customers.find(x=>x.id===custEdit);return c&&c.photo?c.photo:null};
 function setPrev(src,name){
   const n=name||'?';
   $('#cmPrev').innerHTML=src?`<img class="av" style="width:64px;height:64px" src="${src}" alt="">`
-    :`<span class="av" style="width:64px;height:64px;background:${col(n)}">${esc((n.trim()[0]||'?').toUpperCase())}</span>`;
+    :`<span class="av" style="width:64px;height:64px;background:${tmpStyle.c||col(n)}">${tmpStyle.e?`<span class="avemoji" style="font-size:30px">${tmpStyle.e}</span>`:esc((n.trim()[0]||'?').toUpperCase())}</span>`;
   $('#cmRm').hidden=!src;
 }
 $('#cmPick').onclick=()=>$('#cmP').click();
@@ -655,18 +674,18 @@ $('#cmP').onchange=e=>{
 };
 $('#cmRm').onclick=()=>{tmpPhoto=null;setPrev(null,$('#cmN').value)};
 function openCust(c){
-  custEdit=c?c.id:null; tmpPhoto=undefined;
+  custEdit=c?c.id:null; tmpPhoto=undefined; tmpStyle=Object.assign({},(c&&cstyleAll()[c.id])||{});
   $('#cmT').textContent=c?'Banda theek karein':'Naya banda';
   $('#cmN').value=c?c.name:''; $('#cmR').value=c?c.rate:''; $('#cmO').value=c&&c.opening?c.opening:'';
-  setPrev(c&&c.photo?c.photo:null,c?c.name:''); $('#cm').hidden=false;
+  setPrev(c&&c.photo?c.photo:null,c?c.name:''); stylePick(); $('#cm').hidden=false;
 }
 $('#cmS').onclick=()=>{
   const name=$('#cmN').value.trim(), rate=parseFloat($('#cmR').value), opening=parseFloat($('#cmO').value)||0;
   if(!name||isNaN(rate)) return toast('Naam aur rate likhein');
   $('#cm').hidden=true;
   const row={name,rate,opening}; if(tmpPhoto!==undefined) row.photo=tmpPhoto;
-  if(custEdit){mut('customers','upd',Object.assign({id:custEdit},row));toast('Badal gaya (purani entries ka rate nahi badla)')}
-  else{mut('customers','ins',Object.assign({id:uid()},row));toast('Banda add ho gaya')}
+  if(custEdit){cstyleSet(custEdit,tmpStyle);mut('customers','upd',Object.assign({id:custEdit},row));toast('Badal gaya (purani entries ka rate nahi badla)')}
+  else{const nid=uid();cstyleSet(nid,tmpStyle);mut('customers','ins',Object.assign({id:nid},row));toast('Banda add ho gaya')}
 };
 
 /* ---- khata ki tasveer ---- */
@@ -889,6 +908,7 @@ document.addEventListener('click',ev=>{
   mut('entries','del',{id:e.id}); toast('Entry delete ho gayi');
 },true);
 
+let _cq='', _csort=localStorage.getItem('tk_csort')||'naam';
 function rKhata(){
   let tq=0,tms=0;
   customers.forEach(c=>{const k=cs(c),q=ps(c);tq+=Math.max(0,q.bq);tms+=k.ms});
@@ -899,13 +919,23 @@ function rKhata(){
   <div class="big"><span class="cur">Rs</span><span data-lv="hero" data-base="${tq}" data-runs='${JSON.stringify(heroRuns)}'>${_nf.format(Math.round(tq))}</span></div>
   <div class="kfoot"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>Kul waqt</span><b data-lv="herot" data-base="${tms}" data-runs='${JSON.stringify(heroRuns)}'>${dur(tms)}</b></div></div>
   <div class="sec"><h2>👥 Bandon ke khate</h2><button class="lnk" id="addC">+ Naya banda</button></div>`;
-  h+=n?customers.map(c=>{const k=cs(c),q=ps(c),clr=(q.bq>0||runMap.has(c.id))?'':' clr';
+  const met=new Map(); customers.forEach(c=>met.set(c.id,{k:cs(c),q:ps(c)}));
+  const cardHtml=c=>{const k=cs(c),q=ps(c),clr=(q.bq>0||runMap.has(c.id))?'':' clr';
     const re=runMap.get(c.id), due=q.bq>0||!!re;
-    return `<div class="card row ${due?'due':'okc'}" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span>${re?`<span class="rn" data-lv="h" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}">&#9679; Chal raha ha</span>`:''}</div></div><div class="end"><b class="amt${clr}"${re?` data-lv="hb" data-base="${q.bq}" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}"`:''}>${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`}).join('')
-    :'<div class="empty">Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.</div>';
+    return `<div class="card row ${due?'due':'okc'}" data-c="${c.id}">${av(c.name)}<div class="grow"><b class="cn">${esc(c.name)}</b><div class="mu cm"><span>${dur(k.ms)}</span><span>Hisaab ${rs(k.m)}</span>${re?`<span class="rn" data-lv="h" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}">&#9679; Chal raha ha</span>`:''}</div></div><div class="end"><b class="amt${clr}"${re?` data-lv="hb" data-base="${q.bq}" data-s="${new Date(re.start_at).getTime()}" data-r="${re.rate}"`:''}>${rs(q.bq)}</b><span class="chev">\u203a</span></div></div>`};
+  const SORTS={naam:(a,b)=>a.name.localeCompare(b.name),
+    baqaya:(a,b)=>met.get(b.id).q.bq-met.get(a.id).q.bq,
+    chalta:(a,b)=>(runMap.has(b.id)-runMap.has(a.id))||(met.get(b.id).q.bq-met.get(a.id).q.bq),
+    pani:(a,b)=>met.get(b.id).k.ms-met.get(a.id).k.ms};
+  const listHtml=()=>{const qq=_cq.trim().toLowerCase(); const l=customers.filter(c=>!qq||c.name.toLowerCase().includes(qq)).sort(SORTS[_csort]||SORTS.naam);
+    return l.length?l.map(cardHtml).join(''):'<div class="empty">'+(qq?'Is naam ka koi banda nahi.':'Abhi koi banda nahi.<br>Upar "+ Naya banda" dabayen.')+'</div>'};
+  h+=(n>1?`<div class="cbar"><input id="cq" type="search" placeholder="\u{1F50D} Naam dhoondein" value="${esc(_cq)}" autocomplete="off"><select id="cso"><option value="naam">A-Z naam</option><option value="baqaya">Zyada baqaya pehle</option><option value="chalta">Chalta hua pehle</option><option value="pani">Zyada pani pehle</option></select></div>`:'')+`<div id="clist">${listHtml()}</div>`;
   $('#main').innerHTML=h;
+  const bindCards=()=>document.querySelectorAll('#clist [data-c]').forEach(el=>el.onclick=()=>{cid=el.dataset.c;flt='all';go('detail')});
+  const refill=()=>{$('#clist').innerHTML=listHtml();bindCards();liveSync()};
+  if($('#cq')){ $('#cq').oninput=e=>{_cq=e.target.value;refill()}; $('#cso').value=_csort; $('#cso').onchange=e=>{_csort=e.target.value;localStorage.setItem('tk_csort',_csort);refill()} }
+  bindCards();
   $('#addC').onclick=()=>openCust(null);
-  document.querySelectorAll('[data-c]').forEach(el=>el.onclick=()=>{cid=el.dataset.c;flt='all';go('detail')});
 }
 
 document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="pm" hidden><div class="sheet">
@@ -1814,6 +1844,34 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&FQ.lengt
 // header ki "Online" goli mein bhi dikhao
 const _setStatFq=setStat;
 setStat=function(){_setStatFq(); if(FQ.length){const s=$('#stat'); if(s) s.textContent+=' \u00b7 \u26A0'+FQ.length}};
+
+/* ---- Look: rang, card ka andaaz, background (Setting mein) ---- */
+const ACC=[['teal','#0a5f6e','Teal'],['blue','#1d4fbf','Neela'],['green','#14804a','Hara'],['purple','#6a3fd0','Jamni'],['orange','#c2540f','Narangi'],['pink','#c2307f','Gulabi']];
+const lookGet=()=>{try{return JSON.parse(localStorage.getItem('tk_look')||'{}')}catch(e){return{}}};
+function lookApply(){
+  const L=lookGet(), h=document.documentElement;
+  if(L.acc&&L.acc!=='teal') h.setAttribute('data-acc',L.acc); else h.removeAttribute('data-acc');
+  if(L.dens==='compact') h.setAttribute('data-dens','compact'); else h.removeAttribute('data-dens');
+  if(L.bg==='waves') h.setAttribute('data-bg','waves'); else h.removeAttribute('data-bg');
+  const m=document.querySelector('meta[name=theme-color]'); if(m) m.content=getComputedStyle(h).getPropertyValue('--a1').trim()||'#08505d';
+}
+const _rsLook=rSettings;
+rSettings=function(){
+  _rsLook();
+  const L=lookGet(), acc=L.acc||'teal', dens=L.dens||'comfy', bg=L.bg||'plain';
+  $('#main').insertAdjacentHTML('afterbegin',`<div class="card" id="lkCard"><b>\u{1F3A8} Look aur rang</b>
+  <div class="mu">App ka rang chunein</div>
+  <div class="sws">${ACC.map(([k,c,n])=>`<button type="button" class="sw ${acc===k?'on':''}" data-lacc="${k}" style="--sw:${c}" aria-label="${n}"></button>`).join('')}</div>
+  <label>Card ka andaaz</label>
+  <div class="chips"><button data-ldens="comfy" class="${dens==='comfy'?'on':''}">Aaram wala</button><button data-ldens="compact" class="${dens==='compact'?'on':''}">Compact</button></div>
+  <label style="margin-top:12px;display:block">Background</label>
+  <div class="chips"><button data-lbg="plain" class="${bg==='plain'?'on':''}">Saada</button><button data-lbg="waves" class="${bg==='waves'?'on':''}">Pani ki lehrein</button></div></div>`);
+  const save=(k,v)=>{const o=lookGet();o[k]=v;localStorage.setItem('tk_look',JSON.stringify(o));lookApply();rSettings()};
+  document.querySelectorAll('[data-lacc]').forEach(b=>b.onclick=()=>save('acc',b.dataset.lacc));
+  document.querySelectorAll('[data-ldens]').forEach(b=>b.onclick=()=>save('dens',b.dataset.ldens));
+  document.querySelectorAll('[data-lbg]').forEach(b=>b.onclick=()=>save('bg',b.dataset.lbg));
+};
+lookApply();
 
 boot();
 </script>
