@@ -1660,7 +1660,7 @@ function rDetail(){
   };
   const opn=(all&&k.o>0)?`<div class="kr opn" id="opn"><div></div><div><b>Pehle ka hisaab</b><br><span class="mu">(purani book)</span></div><div></div><div><b>${num(k.o)}</b></div><div>${num(k.o)}</div></div>`:'';
   const body=(asc?opn:'')+ord.map(row).join('')+(asc?'':opn);
-  const h=`<div class="khd">${av(c.name)}<div class="grow"><b>${esc(c.name)}</b><span>Rate Rs ${c.rate} per ghanta</span><span>Tubewell Khata &middot; ${today}</span></div></div>
+  const h=`<div class="khd">${av(c.name)}<button class="edav" id="edAv" aria-label="Rang aur emoji badlein">\u{1F3A8}</button><div class="grow"><b>${esc(c.name)}</b><span>Rate Rs ${c.rate} per ghanta</span><span>Tubewell Khata &middot; ${today}</span></div></div>
   <div class="kb">
   <div><small>Total pani</small><b${lv('tp',k.ms)}>${dur(k.ms)}</b></div>
   <div><small>Total paise (hisaab)</small><b${lv('tm',k.m)}>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
@@ -1677,7 +1677,7 @@ function rDetail(){
   <div class="kr tot"><div>${all?'Kul':'Total'}</div><div></div><div>${hh(all?k.ms:tms)}</div><div>${num(all?k.m:tam)}</div><div>${num(q.bq)}</div></div></div>
   ${payments.some(z=>z.customer_id===c.id)?`<button class="btn s" id="jhBtn" style="margin:0 0 10px"><span class="em">&#128176;</span> Jama ki list (theek / delete)</button>`:''}
   <button class="btn s" id="shotBtn" style="margin:0 0 10px"><span class="em">📷</span> Tasveer gallery mein save karein</button>
-  <div class="two2"><button class="btn s" id="eC">Naam / rate / purana hisaab badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
+  <div class="two2"><button class="btn s" id="eC">\u270F\uFE0F Naam / rate / rang / emoji badlein</button><button class="btn d" id="dC">Banda hatayen</button></div>`;
   $('#main').innerHTML=h;
   document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>{flt=b.dataset.f;render()});
   document.querySelectorAll('[data-p]').forEach(el=>el.onclick=()=>openPay(payments.find(x=>x.id===el.dataset.p)));
@@ -1694,6 +1694,7 @@ function rDetail(){
   };
   $('#sortB').onclick=()=>{localStorage.setItem('tk_sort',asc?'desc':'asc');render()};
   $('#eC').onclick=()=>openCust(c);
+  if($('#edAv')) $('#edAv').onclick=()=>openCust(c);
   if($('#opn')) $('#opn').onclick=()=>openCust(c);
   $('#dC').onclick=()=>{
     if(!confirm('Is bande ka sara hisaab bhi delete ho jayega. Pakka?')) return;
@@ -1860,7 +1861,7 @@ rSettings=function(){
   _rsLook();
   const L=lookGet(), acc=L.acc||'teal', dens=L.dens||'comfy', bg=L.bg||'plain';
   $('#main').insertAdjacentHTML('afterbegin',`<div class="card" id="lkCard"><b>\u{1F3A8} Look aur rang</b>
-  <div class="mu">App ka rang chunein</div>
+  <div class="mu">App ka rang chunein. Har banday ka apna rang aur emoji: banday ka khata kholein, uske avatar ke paas 🎨 dabayen.</div>
   <div class="sws">${ACC.map(([k,c,n])=>`<button type="button" class="sw ${acc===k?'on':''}" data-lacc="${k}" style="--sw:${c}" aria-label="${n}"></button>`).join('')}</div>
   <label>Card ka andaaz</label>
   <div class="chips"><button data-ldens="comfy" class="${dens==='comfy'?'on':''}">Aaram wala</button><button data-ldens="compact" class="${dens==='compact'?'on':''}">Compact</button></div>
