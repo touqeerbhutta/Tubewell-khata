@@ -1660,7 +1660,7 @@ function rDetail(){
   };
   const opn=(all&&k.o>0)?`<div class="kr opn" id="opn"><div></div><div><b>Pehle ka hisaab</b><br><span class="mu">(purani book)</span></div><div></div><div><b>${num(k.o)}</b></div><div>${num(k.o)}</div></div>`:'';
   const body=(asc?opn:'')+ord.map(row).join('')+(asc?'':opn);
-  const h=`<div class="khd">${av(c.name)}<button class="edav" id="edAv" aria-label="Rang aur emoji badlein">\u{1F3A8}</button><div class="grow"><b>${esc(c.name)}</b><span>Rate Rs ${c.rate} per ghanta</span><span>Tubewell Khata &middot; ${today}</span></div></div>
+  const h=`<div class="khd"><div class="avw">${av(c.name)}<button class="edav" id="edAv" aria-label="Rang aur emoji badlein">\u{1F3A8}</button></div><div class="grow"><b>${esc(c.name)}</b><span>Rate Rs ${c.rate} per ghanta</span><span>Tubewell Khata &middot; ${today}</span></div></div>
   <div class="kb">
   <div><small>Total pani</small><b${lv('tp',k.ms)}>${dur(k.ms)}</b></div>
   <div><small>Total paise (hisaab)</small><b${lv('tm',k.m)}>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
