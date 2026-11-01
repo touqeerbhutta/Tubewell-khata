@@ -404,3 +404,12 @@ html.lite[data-bg=waves] body::after{display:none}
 .edav{position:absolute;right:-5px;bottom:-5px;left:auto;top:auto;width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.9);background:#fff;padding:0;margin:0;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 8px rgba(0,0,0,.25);z-index:2}
 .edav:active{transform:scale(.9)}
 .khd .avemoji{font-size:32px}
+
+/* =====================================================================
+   15 ---- Swipe-back makhan: animation ke dauran bhaari effects band, layers tayyar
+   ===================================================================== */
+#pg2,#pgdim{backface-visibility:hidden;-webkit-backface-visibility:hidden}
+#pg2{contain:layout style;transform:translateZ(0);box-shadow:-6px 0 16px rgba(0,0,0,.2)}
+body.noblur :is(header,.fab,.stat,.kchip,.lnk,#back,header button#bOut){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body.noblur header{background:var(--grad)!important}
+body.noblur .fab{background:linear-gradient(135deg,var(--a2),var(--a3h))!important}

@@ -390,7 +390,7 @@ async function loadAll(){
   if(pr.error&&isNet(pr.error)) return render();
   const newPay=pr.error?null:pr.data;
   if(_mseq!==s0||Q.length) return render();
-  customers=c.data; entries=all; if(newPay) payments=newPay; fqApply(); _lastLoad=Date.now(); saveLocal(); render();
+  customers=c.data; entries=all; if(newPay) payments=newPay; fqApply(); dataVer++; _lastLoad=Date.now(); saveLocal(); render();
 }
 function mut(t,op,row){
   _mseq++;
@@ -400,6 +400,8 @@ function mut(t,op,row){
   if(t==='customers') customers.sort(byName);
   Q.push({t,op,row}); saveLocal(); render(); flush();
 }
+let dataVer=0, homeVer=-1;
+const dataSig=()=>dataVer+'|'+customers.length+'|'+entries.length+'|'+payments.length;
 function listen(){
   if(ch) return;
   ch=sb.channel('tk');
@@ -410,7 +412,7 @@ function listen(){
     if(p.eventType==='DELETE'){if(i>-1)arr.splice(i,1);if(t==='customers')entries=entries.filter(e=>e.customer_id!==row.id)}
     else if(i>-1) arr[i]=p.new; else arr.push(p.new);
     if(t==='customers') customers.sort(byName);
-    saveLocal(); render();
+    dataVer++; saveLocal(); render();
   }));
   ch.subscribe();
 }
@@ -580,33 +582,35 @@ if(AppP) AppP.addListener('backButton',()=>{
   try{AppP.minimizeApp()}catch(e){try{AppP.exitApp()}catch(e2){}}
 });
 (function(){
-  let sx=0,sy=0,dx=0,on=false,lock=false;
-  const el=()=>$('#main');
-  const reset=()=>{const m=el();m.style.transition='';m.style.transform='';m.style.opacity=''};
+  let sx=0,sy=0,dx=0,on=false,lock=false,raf=0,m=null;
+  const reset=()=>{const e=$('#main');e.style.transition='';e.style.transform='';e.style.opacity='';e.style.willChange=''};
+  const apply=()=>{raf=0; if(!lock) return; m.style.transform='translate3d('+(dx*0.92)+'px,0,0)'; m.style.opacity=(1-Math.min(.55,dx/(innerWidth*1.1))).toFixed(3)};
   document.addEventListener('touchstart',e=>{
-    const anyModal=[...document.querySelectorAll('.modal')].some(m=>!m.hidden);
+    const anyModal=[...document.querySelectorAll('.modal')].some(x=>!x.hidden);
     if($('#app').hidden||view==='khata'||view==='detail'||anyModal||e.touches.length!==1||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){on=false;return}
     sx=e.touches[0].clientX; sy=e.touches[0].clientY; dx=0; on=true; lock=false;
+    m=$('#main'); m.style.willChange='transform,opacity';
   },{passive:true});
   document.addEventListener('touchmove',e=>{
     if(!on) return;
     const t=e.touches[0], x=t.clientX-sx, y=t.clientY-sy;
     if(!lock){
-      if(Math.abs(y)>Math.abs(x)&&Math.abs(y)>12){on=false;return}
-      if(x>14&&x>Math.abs(y)*1.4) lock=true; else return;
+      if(Math.abs(y)>Math.abs(x)&&Math.abs(y)>12){on=false;reset();return}
+      if(x>14&&x>Math.abs(y)*1.4){lock=true;m.style.transition='none'} else return;
     }
-    dx=Math.max(0,x); const m=el();
-    m.style.transition='none'; m.style.transform='translateX('+(dx*0.92)+'px)';
-    m.style.opacity=String(1-Math.min(.55,dx/(innerWidth*1.1)));
+    dx=Math.max(0,x-14);
+    if(!raf) raf=requestAnimationFrame(apply);
   },{passive:true});
   const end=()=>{
-    if(!on||!lock){on=false;return}
-    on=false; lock=false; const m=el();
+    if(!on){return}
+    on=false; if(raf){cancelAnimationFrame(raf);raf=0}
+    if(!lock){reset();return}
+    lock=false;
     if(dx>innerWidth*0.28){
-      m.style.transition='transform .2s ease-out,opacity .2s'; m.style.transform='translateX(105%)'; m.style.opacity='0';
+      m.style.transition='transform .2s cubic-bezier(.22,1,.36,1),opacity .2s'; m.style.transform='translate3d(105%,0,0)'; m.style.opacity='0';
       setTimeout(()=>{reset();goBack()},190);
     }else{
-      m.style.transition='transform .24s cubic-bezier(.2,.8,.2,1),opacity .24s'; m.style.transform='translateX(0)'; m.style.opacity='1';
+      m.style.transition='transform .24s cubic-bezier(.22,1,.36,1),opacity .24s'; m.style.transform='translate3d(0,0,0)'; m.style.opacity='1';
       setTimeout(reset,250);
     }
   };
@@ -936,6 +940,7 @@ function rKhata(){
   if($('#cq')){ $('#cq').oninput=e=>{_cq=e.target.value;refill()}; $('#cso').value=_csort; $('#cso').onchange=e=>{_csort=e.target.value;localStorage.setItem('tk_csort',_csort);refill()} }
   bindCards();
   $('#addC').onclick=()=>openCust(null);
+  homeVer=dataSig();
 }
 
 document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="pm" hidden><div class="sheet">
@@ -1248,6 +1253,7 @@ window.addEventListener('online',()=>setTimeout(()=>otaCheck(false),1500));
 document.head.insertAdjacentHTML('beforeend','<style>#pg2{position:fixed;left:0;right:0;bottom:0;z-index:4;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding-top:44px;background:var(--bg);touch-action:pan-y;box-shadow:-8px 0 22px #00000038}#pgdim{position:fixed;left:0;right:0;bottom:0;z-index:3;background:#000;opacity:0;pointer-events:none}body.noblur nav{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;background:var(--card)!important}</style>');
 $('#app').insertAdjacentHTML('beforeend','<div id="pgdim" hidden></div><main id="pg2" hidden></main>');
 const pgDim=$('#pgdim'), PGE='cubic-bezier(.22,1,.36,1)', PGD=300;
+const par=()=>!document.documentElement.classList.contains('lite');   // kamzor phone par neeche ki list saath nahi khichti (bhaari layer)
 let pgOpen=false, pgBusy=false, pgBase=0, pgTok=0, inPg=false;
 
 function pgChrome(){
@@ -1275,13 +1281,13 @@ function openPg(){
   document.body.classList.add('noblur'); p.style.willChange='transform'; m.style.willChange='transform';
   const o={duration:PGD,easing:PGE,fill:'forwards'};
   p.animate([{transform:'translateX(100%)'},{transform:'translateX(0)'}],o);
-  m.animate([{transform:'translateX(0)'},{transform:'translateX(-24%)'}],o);
+  if(par()) m.animate([{transform:'translateX(0)'},{transform:'translateX(-24%)'}],o);
   pgDim.animate([{opacity:0},{opacity:.25}],o);
   queueMicrotask(()=>window.scrollTo(0,pgBase));
   setTimeout(()=>{
     if(tok!==pgTok) return;
     p.getAnimations().forEach(a=>a.cancel()); m.getAnimations().forEach(a=>a.cancel()); pgDim.getAnimations().forEach(a=>a.cancel());
-    p.style.transform=''; p.style.willChange=''; m.style.transform='translateX(-24%)'; pgDim.style.opacity='.25';
+    p.style.transform=''; p.style.willChange=''; m.style.transform=par()?'translateX(-24%)':''; m.style.willChange=''; pgDim.style.opacity='.25'; pgDim.style.willChange='';
     document.body.classList.remove('noblur'); pgBusy=false;
   },PGD+40);
 }
@@ -1291,14 +1297,15 @@ function closePg(from,dur){
   document.body.classList.add('noblur'); p.style.willChange='transform'; m.style.willChange='transform';
   const o={duration:d,easing:PGE,fill:'forwards'};
   p.animate([{transform:'translateX('+from+'px)'},{transform:'translateX(100%)'}],o);
-  m.animate([{transform:'translateX('+(-24*(1-pr))+'%)'},{transform:'translateX(0)'}],o);
+  if(par()) m.animate([{transform:'translateX('+(-24*(1-pr))+'%)'},{transform:'translateX(0)'}],o);
   pgDim.animate([{opacity:.25*(1-pr)},{opacity:0}],o);
   queueMicrotask(()=>window.scrollTo(0,pgBase));
   setTimeout(()=>{
     if(tok!==pgTok) return;
     pgReset();
     if(view==='detail') return render();
-    _r8(); $('#main').getAnimations().forEach(a=>a.cancel());
+    if(homeVer!==dataSig()) render(); else liveSync();
+    $('#main').getAnimations().forEach(a=>a.cancel());
     window.scrollTo(0,pgBase);
   },d+40);
 }
@@ -1324,48 +1331,57 @@ render=function(){
 };
 
 (function(){
-  let sx=0,sy=0,dx=0,on=false,lock=false,W=0,vx=0,lx=0,lt=0;
+  /* Swipe-back: har frame mein sirf ek baar update (rAF), translate3d, layers pehle se tayyar,
+     shuru ka jhatka nahi (dead-zone ghata kar), chhorte waqt ungli ki raftaar se animation. */
+  let sx=0,sy=0,dx=0,on=false,lock=false,W=0,vx=0,lx=0,lt=0,raf=0,P=null,M=null;
+  const DEAD=8;
   const modalOpen=()=>[...document.querySelectorAll('.modal')].some(m=>!m.hidden);
+  const apply=()=>{
+    raf=0; if(!lock) return;
+    const pr=Math.min(1,dx/W);
+    P.style.transform='translate3d('+dx+'px,0,0)';
+    if(par()) M.style.transform='translate3d('+(-0.24*W*(1-pr))+'px,0,0)';
+    pgDim.style.opacity=(.25*(1-pr)).toFixed(3);
+  };
   document.addEventListener('touchstart',e=>{
     if(!pgOpen||pgBusy||modalOpen()||e.touches.length!==1||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)){on=false;return}
     const t=e.touches[0]; sx=lx=t.clientX; sy=t.clientY; lt=performance.now(); vx=0; dx=0; on=true; lock=false;
+    P=$('#pg2'); M=$('#main'); W=innerWidth;
+    P.style.willChange='transform'; if(par()) M.style.willChange='transform'; pgDim.style.willChange='opacity';   // layers ungli rakhte hi tayyar
   },{passive:true});
   document.addEventListener('touchmove',e=>{
     if(!on) return;
     const t=e.touches[0], x=t.clientX-sx, y=t.clientY-sy;
     if(!lock){
       if(Math.abs(y)>Math.abs(x)&&Math.abs(y)>10){on=false;return}
-      if(x>10&&x>Math.abs(y)*1.3){
-        lock=true; W=innerWidth; document.body.classList.add('noblur');
-        $('#pg2').style.willChange='transform'; $('#main').style.willChange='transform'; $('#pg2').style.overflowY='hidden';
-      }else return;
+      if(x>DEAD&&x>Math.abs(y)*1.3){ lock=true; document.body.classList.add('noblur'); P.style.overflowY='hidden' } else return;
     }
-    dx=Math.max(0,x);
-    const now=performance.now(); vx=(t.clientX-lx)/Math.max(1,now-lt); lx=t.clientX; lt=now;
-    const pr=Math.min(1,dx/W);
-    $('#pg2').style.transform='translateX('+dx+'px)';
-    $('#main').style.transform='translateX('+(-24*(1-pr))+'%)';
-    pgDim.style.opacity=String(.25*(1-pr));
+    dx=Math.max(0,x-DEAD);
+    const now=performance.now(), inst=(t.clientX-lx)/Math.max(1,now-lt); vx=vx*.6+inst*.4; lx=t.clientX; lt=now;
+    if(!raf) raf=requestAnimationFrame(apply);
   },{passive:true});
   const end=()=>{
     if(!on) return; on=false;
-    if(!lock) return; lock=false;
-    const p=$('#pg2'), m=$('#main');
+    if(raf){cancelAnimationFrame(raf);raf=0}
+    if(!lock){ if(P){P.style.willChange='';M.style.willChange='';pgDim.style.willChange=''} return }
+    lock=false;
+    const p=P, m=M;
     p.style.overflowY='';
     if(dx>W*0.33||vx>0.5){
-      view='khata'; closePg(dx,Math.round(140+180*Math.max(0,1-dx/W)));
+      view='khata';
+      closePg(dx,Math.round(Math.max(150,Math.min(320,(W-dx)/Math.max(vx,.9)))));
     }else{
       const tok=++pgTok, pr=Math.min(1,dx/W); pgBusy=true;
-      const o={duration:260,easing:PGE,fill:'forwards'};
-      p.animate([{transform:'translateX('+dx+'px)'},{transform:'translateX(0)'}],o);
-      m.animate([{transform:'translateX('+(-24*(1-pr))+'%)'},{transform:'translateX(-24%)'}],o);
+      const o={duration:240,easing:PGE,fill:'forwards'};
+      p.animate([{transform:'translate3d('+dx+'px,0,0)'},{transform:'translate3d(0,0,0)'}],o);
+      if(par()) m.animate([{transform:'translate3d('+(-0.24*W*(1-pr))+'px,0,0)'},{transform:'translate3d('+(-0.24*W)+'px,0,0)'}],o);
       pgDim.animate([{opacity:.25*(1-pr)},{opacity:.25}],o);
       setTimeout(()=>{
         if(tok!==pgTok) return;
         p.getAnimations().forEach(a=>a.cancel()); m.getAnimations().forEach(a=>a.cancel()); pgDim.getAnimations().forEach(a=>a.cancel());
-        p.style.transform=''; p.style.willChange=''; m.style.transform='translateX(-24%)'; pgDim.style.opacity='.25';
+        p.style.transform=''; p.style.willChange=''; m.style.transform=par()?'translateX(-24%)':''; m.style.willChange=''; pgDim.style.opacity='.25'; pgDim.style.willChange='';
         document.body.classList.remove('noblur'); pgBusy=false;
-      },300);
+      },280);
     }
   };
   document.addEventListener('touchend',end,{passive:true});
@@ -1763,6 +1779,7 @@ document.addEventListener('visibilitychange',()=>{ document.hidden?galFlushNow()
 setTimeout(galResume,3000);
 const _mutGal=mut;
 mut=function(t,op,row){
+  dataVer++;
   const ids=new Set();
   if(galOn()&&(t==='entries'||t==='payments')){
     const src=(t==='entries'?entries:payments).find(x=>x.id===row.id);
