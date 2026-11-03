@@ -413,3 +413,10 @@ html.lite[data-bg=waves] body::after{display:none}
 body.noblur :is(header,.fab,.stat,.kchip,.lnk,#back,header button#bOut){backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 body.noblur header{background:var(--grad)!important}
 body.noblur .fab{background:linear-gradient(135deg,var(--a2),var(--a3h))!important}
+
+/* login ki mudat khatam: app chalti rahe, sirf yaad dihani */
+#rlBar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:12px 16px 0;padding:10px 12px;border-radius:14px;background:#fff4e0;border:1px solid #f1c27d;color:#7a4a08;font-size:13.5px;font-weight:700}
+#rlBar[hidden]{display:none}
+#rlBar span{flex:1 1 100%}
+#rlBar button{flex:1;border:0;border-radius:10px;padding:9px 10px;font-weight:800;font-size:13px;background:#c2540f;color:#fff}
+@media (prefers-color-scheme:dark){#rlBar{background:#3a2c12;border-color:#7a5a22;color:#f1c27d}}

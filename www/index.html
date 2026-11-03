@@ -8,6 +8,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#08505d">
+<script>
+(function(){
+  /* 1) localStorage bhar jaye to bhi app na ruke: jagah banao aur dobara koshish, warna chup */
+  try{var si=Storage.prototype.setItem,ri=Storage.prototype.removeItem;
+    Storage.prototype.setItem=function(k,v){try{return si.call(this,k,v)}catch(e){
+      window.__lsFull=true;
+      try{['tk_gal_st','tk_gal_pend','tk_errlog'].forEach(function(x){if(x!==k)ri.call(localStorage,x)});si.call(this,k,v)}catch(e2){}
+    }}}catch(e){}
+  /* 2) Supabase ki request 25 second se zyada na atke (wifi hai magar internet nahi wali halat) */
+  try{var of=window.fetch;if(of){window.fetch=function(u,o){
+    var s=String((u&&u.url)||u||'');
+    if(!/supabase\.co\//.test(s)||(o&&o.signal)||(u&&u.signal&&u.signal.constructor&&typeof u==='object'&&u.url)) return of.apply(this,arguments);
+    var ac=new AbortController(),t=setTimeout(function(){ac.abort()},25000);
+    return of.call(this,u,Object.assign({},o,{signal:ac.signal})).finally(function(){clearTimeout(t)});
+  }}}catch(e){}
+  /* 3) galtiyan yaad rakho: Setting > "App ki sehat" mein dikhengi */
+  window.__errs=window.__errs||[];
+  function rec(m){try{window.__errs.push(m);var a=JSON.parse(localStorage.getItem('tk_errlog')||'[]');a.push({t:Date.now(),m:String(m).slice(0,200)});localStorage.setItem('tk_errlog',JSON.stringify(a.slice(-5)))}catch(e){}}
+  window.addEventListener('error',function(e){rec((e.message||'error')+' @'+(e.lineno||'')+':'+(e.colno||''))});
+  window.addEventListener('unhandledrejection',function(e){rec('promise: '+((e.reason&&e.reason.message)||e.reason))});
+})();
+</script>
 <script>(function(){var h=document.documentElement;try{var L=JSON.parse(localStorage.getItem('tk_look')||'{}');if(L.acc&&L.acc!=='teal')h.setAttribute('data-acc',L.acc);if(L.dens==='compact')h.setAttribute('data-dens','compact');if(L.bg==='waves')h.setAttribute('data-bg','waves')}catch(e){}try{var m=navigator.deviceMemory,c=navigator.hardwareConcurrency;if((m&&m<=2)||(c&&c<=4))h.classList.add('lite')}catch(e){}try{var g=JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":80}');h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}catch(e){}})()</script>
 <title>Tubewell Khata</title>
 <script src="supabase.js"></script>
@@ -201,14 +223,15 @@ main.enter>*:nth-child(n+5){animation-delay:.2s!important}
 
 </style>
 <script>
-window.__errs=[];
-window.addEventListener('error',function(e){window.__errs.push((e.message||'')+' @'+(e.lineno||''))});
-setTimeout(function(){
+window.__errs=window.__errs||[];
+setTimeout(function chk(){
   var a=document.getElementById('app'),u=document.getElementById('auth');
-  if(a&&u&&a.hidden&&u.hidden){
-    document.body.insertAdjacentHTML('beforeend','<div id="errOv" style="position:fixed;left:0;right:0;top:0;bottom:0;z-index:2000;background:#fff;color:#122428;padding:24px;font:15px system-ui;overflow:auto"><h3>App shuru nahi ho saki</h3><p>Is ka screenshot bhej dein:</p><pre style="white-space:pre-wrap;background:#f2f5f7;padding:12px;border-radius:12px">'+(window.__errs.join('\n')||'koi error nahi mila')+'</pre><button style="padding:14px;border:0;border-radius:12px;background:#0a5f6e;color:#fff;font-weight:700;width:100%" onclick="try{Capacitor.Plugins.CapacitorUpdater.reset().then(function(){location.reload()})}catch(e){location.reload()}">Asli (APK wale) version par wapas jao</button></div>');
-  }
-},25000);
+  if(!(a&&u&&a.hidden&&u.hidden)) return;
+  if(!window.__rescued&&typeof boot==='function'){window.__rescued=true;try{boot()}catch(e){window.__errs.push('rescue: '+e.message)}setTimeout(chk,2500);return}
+  if(document.getElementById('errOv')) return;
+  document.body.insertAdjacentHTML('beforeend','<div id="errOv" style="position:fixed;left:0;right:0;top:0;bottom:0;z-index:2000;background:#fff;color:#122428;padding:24px;font:15px system-ui;overflow:auto"><h3>App shuru nahi ho saki</h3><p>Aap ka data phone mein mehfooz ha. Neeche "Dobara koshish" dabayen. Phir bhi na khule to is ka screenshot bhej dein:</p><pre id="errPre" style="white-space:pre-wrap;background:#f2f5f7;padding:12px;border-radius:10px;font-size:12px"></pre><button onclick="location.reload()" style="width:100%;padding:14px;border:0;border-radius:14px;background:#0a5f6e;color:#fff;font-size:16px;font-weight:700">Dobara koshish</button></div>');
+  document.getElementById('errPre').textContent=(window.__errs.join('\n')||'koi error nahi mila')+'\nonline='+navigator.onLine;
+},6000);
 setInterval(function(){var o=document.getElementById('errOv'),a=document.getElementById('app'),u=document.getElementById('auth');if(o&&((a&&!a.hidden)||(u&&!u.hidden)))o.remove()},1000);
 </script>
 
@@ -337,7 +360,7 @@ function toast(t){const e=$('#toast');e.textContent=t;e.hidden=false;setTimeout(
 function setStat(){const s=$('#stat'),off=!navigator.onLine;s.textContent=(off?'Offline':'Online')+(Q.length?' · '+Q.length+' baqi':'');s.className='stat '+(off?'off':Q.length?'wait':'on')}
 function saveLocal(){try{localStorage.setItem(LS,JSON.stringify({customers,entries,payments,Q}))}catch(e){}}
 function loadLocal(){try{const d=JSON.parse(localStorage.getItem(LS)||'null');if(d){customers=d.customers||[];entries=d.entries||[];payments=d.payments||[];Q=d.Q||[]}}catch(e){}}
-const isNet=er=>!navigator.onLine||/fetch|network/i.test((er&&er.message)||'');
+const isNet=er=>!navigator.onLine||/fetch|network|abort|timeout|load failed/i.test((er&&er.message)||'');
 /* ---- Sync safety: jo tabdeeli server qabool na kare wo HATTI NAHI, FQ mein mehfooz rehti ha ---- */
 let FQ=(()=>{try{return JSON.parse(localStorage.getItem('tk_failq')||'[]')}catch(e){return[]}})(), _fqSilent=false;
 function fqSave(){try{localStorage.setItem('tk_failq',JSON.stringify(FQ))}catch(e){} if(typeof fqUi==='function')fqUi(); if(typeof setStat==='function')setStat()}
@@ -357,19 +380,67 @@ $('#bOut').onclick=async()=>{
   localStorage.removeItem('tk_uid');localStorage.removeItem(LS);FQ=[];fqSave();
   customers=[];entries=[];payments=[];Q=[];boot();
 };
-async function boot(){
-  const {data:{session},error}=await sb.auth.getSession();
-  const off=!session&&localStorage.getItem('tk_uid')&&(!navigator.onLine||(error&&/fetch|network/i.test(error.message||'')));
-  const ok=!!session||!!off;
-  $('#auth').hidden=ok; $('#app').hidden=!ok;
-  if(!ok) return;
+/* ---- Shuru hona: OFFLINE-FIRST ----
+   Pehle phone ka mehfooz data foran dikhao, network ka kaam peeche chalao.
+   (Pehle app login-token ke intezar mein 30 second tak khali rehti thi jab internet na ho.) */
+/* getSession() offline mein token naya karne ki koshish mein minutes tak atak jata ha. Isliye intezar ki had lagayi. */
+const sessionFast=(ms=5000)=>Promise.race([Promise.resolve(sb.auth.getSession()),new Promise(r=>setTimeout(()=>r({data:{session:null},error:{message:'timeout'}}),ms))]);
+const SB_KEY_LS='sb-'+new URL(SB_URL).hostname.split('.')[0]+'-auth-token';
+function storedSession(){try{const j=JSON.parse(localStorage.getItem(SB_KEY_LS)||'null');const s=j&&(j.currentSession||j);return s&&s.user&&s.user.id?s:null}catch(e){return null}}
+function showRelogin(){
+  if(!$('#rlBar')){
+    document.querySelector('header').insertAdjacentHTML('afterend','<div id="rlBar"><span>\u26A0\uFE0F Login ki mudat khatam ho gayi. Aap ka data phone mein mehfooz ha. Sync ke liye dobara login karein.</span><button id="rlB">Login karein</button></div>');
+    $('#rlB').onclick=()=>{$('#auth').hidden=false;$('#app').hidden=true};
+  }
+  $('#rlBar').hidden=false;
+}
+let _netBooted=false, _bootBusy=false;
+async function netSession(r){
+  const session=r&&r.data&&r.data.session, error=r&&r.error;
   if(session){
     const old=localStorage.getItem('tk_uid');
-    if(old&&old!==session.user.id) localStorage.removeItem(LS);
+    if(old&&old!==session.user.id){localStorage.removeItem(LS);customers=[];entries=[];payments=[];Q=[]}
     localStorage.setItem('tk_uid',session.user.id);
+    if(!_netBooted){_netBooted=true;listen()}
+    if($('#rlBar')) $('#rlBar').hidden=true;
+    return loadAll();
   }
+  const netErr=!navigator.onLine||(error&&/fetch|network|timeout|load failed/i.test(error.message||''));
+  if(!netErr){
+    if(localStorage.getItem('tk_uid')&&localStorage.getItem(LS)){showRelogin();return}   // data phone mein ha: app band mat karo, sirf dobara login ka kahein
+    $('#auth').hidden=false;$('#app').hidden=true;return                                  // sach mein logout: login screen
+  }
+  setStat();                                                           // offline: app chalti rahe, baad mein dobara koshish
+}
+function bootNet(){
+  if(_bootBusy) return; _bootBusy=true;
+  sessionFast(8000).then(netSession).catch(()=>{}).finally(()=>{_bootBusy=false});
+}
+async function boot(){
+  _netBooted=false;
+  const stS=storedSession();
+  if(localStorage.getItem('tk_uid')||stS){       // pehle se login: foran local data se kholo (internet ka intezar nahi)
+    if(!localStorage.getItem('tk_uid')&&stS) localStorage.setItem('tk_uid',stS.user.id);
+    $('#auth').hidden=true; $('#app').hidden=false;
+    try{loadLocal(); view='khata'; day=ymd(new Date()); render()}catch(e){window.__errs.push('boot render: '+e.message)}
+    bootNet(); return;
+  }
+  const r=await sessionFast(3500), session=r&&r.data&&r.data.session;
+  if(!session){
+    const st=storedSession();
+    if(st){                                           // login phone mein mehfooz ha, bas internet nahi: offline hi khol do
+      localStorage.setItem('tk_uid',st.user.id);
+      $('#auth').hidden=true; $('#app').hidden=false;
+      loadLocal(); view='khata'; day=ymd(new Date()); render(); bootNet(); return;
+    }
+    $('#auth').hidden=false; $('#app').hidden=true;   // login screen (khali screen nahi)
+    if(!navigator.onLine||(r&&r.error&&/timeout|fetch|network/i.test(r.error.message||''))) toast('Internet nahi ha. Pehli baar login ke liye internet chahiye.');
+    return;
+  }
+  $('#auth').hidden=true; $('#app').hidden=false;
+  localStorage.setItem('tk_uid',session.user.id);
   loadLocal(); view='khata'; day=ymd(new Date()); render();
-  if(session){listen(); await loadAll()}
+  _netBooted=true; listen(); await loadAll();
 }
 
 /* ---- sync ---- */
@@ -509,10 +580,11 @@ $('#fDel').onclick=()=>{
   $('#modal').hidden=true; mut('entries','del',{id:editId});
 };
 
-window.addEventListener('online',()=>{setStat();loadAll()});
+window.addEventListener('online',()=>{setStat();_netBooted?loadAll():bootNet()});
 window.addEventListener('offline',setStat);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('#app').hidden&&Date.now()-_lastLoad>60000)loadAll()});
+document.addEventListener('visibilitychange',()=>{if(document.hidden||$('#app').hidden) return; if(!_netBooted){if(navigator.onLine)bootNet()} else if(Date.now()-_lastLoad>60000)loadAll()});
 setInterval(()=>{if(Q.length)flush()},15000);
+setInterval(()=>{if(!_netBooted&&navigator.onLine&&!$('#app').hidden)bootNet()},20000);   // offline khuli thi, ab internet aa gaya to khud juro
 document.head.insertAdjacentHTML('beforeend','<style>#main{touch-action:pan-y}</style>');
 const gname=()=>{const n=localStorage.getItem('tk_name');return n?', '+esc(n):''};
 sb.auth.onAuthStateChange((ev,sess)=>{
@@ -545,7 +617,7 @@ function rSettings(){
     if(n1.length<6) return toast('Naya password kam az kam 6 harf');
     if(n1!==n2) return toast('Dono naye password barabar nahi');
     if(!navigator.onLine) return toast('Internet chahiye');
-    const {data:{session}}=await sb.auth.getSession();
+    const {data:{session}}=await sessionFast();
     if(!session) return toast('Dobara login karein');
     const r=await sb.auth.signInWithPassword({email:session.user.email,password:old});
     if(r.error) return toast('Maujooda password ghalat hai');
@@ -991,7 +1063,7 @@ $('#pDel').onclick=()=>{
 async function ensureProfile(){
   if(!navigator.onLine) return;
   try{
-    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
+    const {data:{session}}=await sessionFast(); if(!session) return;
     const r=await sb.from('profiles').select('username').maybeSingle();
     if(r.error) return;
     if(r.data){localStorage.setItem('tk_login',r.data.username);return}
@@ -1013,7 +1085,7 @@ async function doAuth(signup){
   }catch(e){}
   const fn=signup?sb.auth.signUp.bind(sb.auth):sb.auth.signInWithPassword.bind(sb.auth);
   const {error}=await fn({email,password:pw});
-  if(error) return toast(error.message);
+  if(error) return toast(!navigator.onLine?'Login ke liye internet chahiye':error.message);
   boot();
 }
 
@@ -1031,7 +1103,7 @@ rSettings=function(){
     if(!/^[a-z0-9._]{3,30}$/.test(nu)) return toast('Username 3 se 30 harf: a-z, 0-9, . aur _');
     if(nu===lg) return toast('Ye pehle se wahi username hai');
     if(!navigator.onLine) return toast('Internet chahiye');
-    const {data:{session}}=await sb.auth.getSession();
+    const {data:{session}}=await sessionFast();
     if(!session) return toast('Dobara login karein');
     const r=await sb.auth.signInWithPassword({email:session.user.email,password:pw});
     if(r.error) return toast('Password ghalat hai');
@@ -1109,7 +1181,7 @@ function listenDevices(){
 async function startDevice(){
   if(!navigator.onLine) return;
   try{
-    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
+    const {data:{session}}=await sessionFast(); if(!session) return;
     const r=await sb.from('devices').select('revoked,name').eq('id',DID).maybeSingle();
     if(r.error) return;
     if(r.data&&r.data.revoked){
@@ -1408,7 +1480,7 @@ function actToast(msg,label,fn,ms){
 async function flush(){
   if(flushing||!Q.length) return; flushing=true;
   try{
-    const {data:{session}}=await sb.auth.getSession(); if(!session) return;
+    const {data:{session}}=await sessionFast(); if(!session) return;
     while(Q.length){
       const f=Q[0]; let n=1, r;
       if(f.op==='ins'){
@@ -1628,6 +1700,8 @@ $('#pSave').onclick=()=>{
   if(isNew&&payments.length>n0){const z=payments[payments.length-1]; actToast('Jama save ho gaya','Rasid banayein',()=>openReceipt(z),9000)}
 };
 
+</script>
+<script>
 /* ---- Liquid Glass (Setting mein on/off + intensity) ---- */
 function glassGet(){try{return JSON.parse(localStorage.getItem('tk_glass')||'{"on":true,"v":80}')}catch(e){return{on:true,v:80}}}
 function glassSet(g){localStorage.setItem('tk_glass',JSON.stringify(g));const h=document.documentElement;h.classList.toggle('glass',!!g.on);h.style.setProperty('--gl',(g.v/100).toFixed(2))}
@@ -1643,6 +1717,8 @@ rSettings=function(){
   $('#glR').oninput=e=>{const o=glassGet();o.v=+e.target.value;$('#glV').textContent=o.v+'%';glassSet(o)};
 };
 
+</script>
+<script>
 /* ---- speed: ek render ke dauran hisaab ek hi baar nikalta ha ---- */
 const _rFast=render;
 render=function(){_inR=true;_grpE=null;_csM=new Map();try{_rFast()}finally{_inR=false;_grpE=null;_csM=null}liveSync()};
@@ -1719,6 +1795,8 @@ function rDetail(){
   bindE();
 }
 
+</script>
+<script>
 /* ---- Gallery backup: har pani/jama ke baad us bande ke khate ki tasveer gallery (Pictures/TubewellKhata) mein khud save ---- */
 const galOn=()=>localStorage.getItem('tk_gal')!=='0';
 const galSt=()=>{try{return JSON.parse(localStorage.getItem('tk_gal_st')||'null')}catch(e){return null}};
@@ -1811,6 +1889,8 @@ rSettings=function(){
   };
 };
 
+</script>
+<script>
 /* ---- Sync safety UI: banner, list, dobara koshish ---- */
 function fqApply(){
   FQ.forEach(f=>{
@@ -1863,6 +1943,8 @@ document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&FQ.lengt
 const _setStatFq=setStat;
 setStat=function(){_setStatFq(); if(FQ.length){const s=$('#stat'); if(s) s.textContent+=' \u00b7 \u26A0'+FQ.length}};
 
+</script>
+<script>
 /* ---- Look: rang, card ka andaaz, background (Setting mein) ---- */
 const ACC=[['teal','#0a5f6e','Teal'],['blue','#1d4fbf','Neela'],['green','#14804a','Hara'],['purple','#6a3fd0','Jamni'],['orange','#c2540f','Narangi'],['pink','#c2307f','Gulabi']];
 const lookGet=()=>{try{return JSON.parse(localStorage.getItem('tk_look')||'{}')}catch(e){return{}}};
@@ -1891,7 +1973,36 @@ rSettings=function(){
 };
 lookApply();
 
-boot();
+</script>
+<script>
+/* ---- Setting > App ki sehat (offline wale sporadic masle pakarne ke liye) ---- */
+const _rsHealth=rSettings;
+rSettings=function(){
+  _rsHealth();
+  let used=0; try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);used+=(k.length+(localStorage.getItem(k)||'').length)*2}}catch(e){}
+  const errs=(()=>{try{return JSON.parse(localStorage.getItem('tk_errlog')||'[]')}catch(e){return[]}})(), last=errs[errs.length-1];
+  const mb=(used/1048576).toFixed(2);
+  $('#main').insertAdjacentHTML('beforeend',`<div class="card" id="hlCard"><b>\u{1FA7A} App ki sehat</b>
+  <div class="mu">Phone mein jagah: ${mb} MB (hadd takreeban 5 MB)${window.__lsFull?' \u26A0 bhar gayi thi':''}</div>
+  <div class="mu">Data: ${customers.length} bande \u00b7 ${entries.length} entries \u00b7 ${Q.length} sync baqi \u00b7 ${FQ.length} nakaam</div>
+  <div class="mu">${last?'Aakhri masla: '+esc(last.m)+' ('+tm(new Date(last.t).toISOString())+')':'Koi masla darj nahi \u2713'}</div>
+  <button class="btn s" id="hlCopy" style="margin-top:10px">Report copy karein</button></div>`);
+  $('#hlCopy').onclick=async()=>{
+    const v=await otaCurrent();
+    const t=['Tubewell Khata report','OTA version: '+v,'online: '+navigator.onLine,'storage: '+mb+' MB'+(window.__lsFull?' (bhar gayi thi)':''),
+      'data: '+customers.length+' bande, '+entries.length+' entries, '+payments.length+' jama, sync baqi '+Q.length+', nakaam '+FQ.length,
+      'errors: '+(errs.length?errs.map(e=>new Date(e.t).toISOString()+' '+e.m).join(' | '):'koi nahi'),'UA: '+navigator.userAgent].join('\n');
+    try{await navigator.clipboard.writeText(t);toast('Report copy ho gayi')}catch(e){
+      const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');toast('Report copy ho gayi')}catch(e2){toast('Copy nahi hui')}ta.remove();
+    }
+  };
+};
+
+</script>
+<script>
+/* ---- shuru: upar ke extra hisson mein koi galti ho to bhi app khulni chahiye ---- */
+try{boot()}catch(e){window.__errs.push('boot: '+e.message)}
+
 </script>
 <link rel="stylesheet" href="ui.css">
 </body></html>
