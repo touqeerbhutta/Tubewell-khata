@@ -1982,11 +1982,15 @@ rSettings=function(){
   let used=0; try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);used+=(k.length+(localStorage.getItem(k)||'').length)*2}}catch(e){}
   const errs=(()=>{try{return JSON.parse(localStorage.getItem('tk_errlog')||'[]')}catch(e){return[]}})(), last=errs[errs.length-1];
   const mb=(used/1048576).toFixed(2);
-  $('#main').insertAdjacentHTML('beforeend',`<div class="card" id="hlCard"><b>\u{1FA7A} App ki sehat</b>
+  const hlHtml=`<div class="card" id="hlCard"><b>\u{1FA7A} App ki sehat</b>
+  <div class="mu" id="hlVer">App version: ...</div>
   <div class="mu">Phone mein jagah: ${mb} MB (hadd takreeban 5 MB)${window.__lsFull?' \u26A0 bhar gayi thi':''}</div>
   <div class="mu">Data: ${customers.length} bande \u00b7 ${entries.length} entries \u00b7 ${Q.length} sync baqi \u00b7 ${FQ.length} nakaam</div>
   <div class="mu">${last?'Aakhri masla: '+esc(last.m)+' ('+tm(new Date(last.t).toISOString())+')':'Koi masla darj nahi \u2713'}</div>
-  <button class="btn s" id="hlCopy" style="margin-top:10px">Report copy karein</button></div>`);
+  <button class="btn s" id="hlCopy" style="margin-top:10px">Report copy karein</button></div>`;
+  const upd=[...document.querySelectorAll('#main .card')].find(c=>{const b=c.querySelector('b');return b&&/App update/.test(b.textContent)});
+  if(upd) upd.insertAdjacentHTML('afterend',hlHtml); else $('#main').insertAdjacentHTML('beforeend',hlHtml);
+  otaCurrent().then(v=>{const e=$('#hlVer'); if(e) e.textContent='App version: '+(v||'pata nahi')+(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()?'':' (browser)')}).catch(()=>{});
   $('#hlCopy').onclick=async()=>{
     const v=await otaCurrent();
     const t=['Tubewell Khata report','OTA version: '+v,'online: '+navigator.onLine,'storage: '+mb+' MB'+(window.__lsFull?' (bhar gayi thi)':''),
