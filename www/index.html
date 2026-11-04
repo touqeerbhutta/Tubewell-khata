@@ -1755,8 +1755,6 @@ function rDetail(){
   const h=`<div class="khd"><div class="avw">${av(c.name)}<button class="edav" id="edAv" aria-label="Rang aur emoji badlein">\u{1F3A8}</button></div><div class="grow"><b>${esc(c.name)}</b><span>Rate Rs ${c.rate} per ghanta</span><span>Tubewell Khata &middot; ${today}</span></div></div>
   <div class="kb">
   <div><small>Total pani</small><b${lv('tp',k.ms)}>${dur(k.ms)}</b></div>
-  <div><small>Total paise (hisaab)</small><b${lv('tm',k.m)}>${rs(k.m)}</b>${k.o>0?`<i>purana ${rs(k.o)}</i>`:''}</div>
-  ${q.pp>0?`<div><small>Jama (minus nahi)</small><b>${rs(q.pp)}</b></div>`:''}
   <div class="hl"><small>Baqaya</small><b${lv('bq',q.bq)}>${rs(q.bq)}</b><i${lv('bt',q.bms)}>${dur(q.bms)} pani</i></div></div>
   ${run?`<div class="runc"><div><b>Tubewell chal raha ha</b><small>Shuru: ${ymd(new Date(run.start_at))===ymd(new Date())?'':sd(ymd(new Date(run.start_at)))+', '}${tm(run.start_at)}</small><div class="lv"><span${lv('t',0)}>${durS(Date.now()-rst)}</span><b${lv('m',0)}>${rs(lvMoney(Date.now()-rst,run.rate))}</b></div></div><button class="stp" id="stopT">Band karo</button></div>`:`<button class="strt" id="startT"><span class="em">&#9654;</span> Tubewell shuru karein</button>`}
   <div class="bigb"><button class="bb w" id="addE"><span class="em">💧</span>Pani ki nayi entry</button><button class="bb g" id="payBtn"><span class="em">💰</span>Pesay jama karein</button></div>
