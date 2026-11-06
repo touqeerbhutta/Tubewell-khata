@@ -420,3 +420,48 @@ body.noblur .fab{background:linear-gradient(135deg,var(--a2),var(--a3h))!importa
 #rlBar span{flex:1 1 100%}
 #rlBar button{flex:1;border:0;border-radius:10px;padding:9px 10px;font-weight:800;font-size:13px;background:#c2540f;color:#fff}
 @media (prefers-color-scheme:dark){#rlBar{background:#3a2c12;border-color:#7a5a22;color:#f1c27d}}
+
+/* =====================================================================
+   16 ---- Interesting UI (1 se 5). Animations sirf html.anim par; wo bhi sirf transform/opacity (GPU par, halki)
+   Setting > Look > Animations: Auto (kamzor phone par band) / On / Off
+   ===================================================================== */
+/* 2) cards ek ek karke aayein + dabane par dabein */
+@keyframes cardIn{from{opacity:0;transform:translateY(14px)}}
+html.anim #clist.enter .card{animation:cardIn .42s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
+html.anim .card[data-c],html.anim .card[data-e]{transition:transform .14s cubic-bezier(.2,.8,.2,1),background-color .14s}
+html.anim .btn,html.anim .bb,html.anim .strt,html.anim .stp{transition:transform .14s cubic-bezier(.2,.8,.2,1)}
+html.anim .btn:active,html.anim .bb:active,html.anim .strt:active,html.anim .stp:active{transform:scale(.96)}
+
+/* 3) hero mein pani ka tank (level = abhi ka baqaya, is phone par dekhe gaye sabse zyada ke muqable) */
+.hwave{position:absolute!important;left:0;right:0;bottom:0;height:var(--lv,25%);z-index:0!important;pointer-events:none;overflow:hidden;opacity:.2;transition:height .9s cubic-bezier(.2,.8,.2,1)}
+.hwave::before{content:'';position:absolute;left:0;top:0;width:200%;height:22px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 22' preserveAspectRatio='none'><path fill='white' d='M0 11Q50 0 100 11T200 11T300 11T400 11V22H0Z'/></svg>") repeat-x;background-size:50% 100%}
+.hwave::after{content:'';position:absolute;left:0;right:0;top:21px;bottom:0;background:#fff}
+@keyframes waveMove{to{transform:translateX(-50%)}}
+html.anim .hwave::before{animation:waveMove 6s linear infinite}
+.hero>*:not(.hwave),.khd>*:not(.hwave){position:relative;z-index:1}
+.khd{overflow:hidden}
+
+/* 4) chalta hua tubewell: boondein girti hain, avatar par halqa, detail card par chamak */
+.drops{display:inline-flex;gap:3px;align-items:flex-end;height:12px;margin-right:2px;vertical-align:middle}
+.drops i{display:block;width:5px;height:7px;border-radius:50% 50% 50% 50%/62% 62% 38% 38%;background:var(--c-water)}
+@keyframes dropFall{0%{transform:translateY(-6px);opacity:0}30%{opacity:1}100%{transform:translateY(8px);opacity:0}}
+html.anim .drops i{animation:dropFall 1s ease-in infinite}
+html.anim .drops i:nth-child(2){animation-delay:.25s}
+html.anim .drops i:nth-child(3){animation-delay:.5s}
+@keyframes ringPulse{0%{transform:scale(.92);opacity:.75}100%{transform:scale(1.28);opacity:0}}
+html.anim .card[data-c].run .av{position:relative;overflow:visible}
+html.anim .card[data-c].run .av::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--c-water);opacity:0;animation:ringPulse 1.8s ease-out infinite;pointer-events:none}
+@keyframes sweep{to{transform:translateX(330%)}}
+.runc{position:relative;overflow:hidden}
+html.anim .runc::after{content:'';position:absolute;top:0;bottom:0;left:0;width:45%;transform:translateX(-120%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);animation:sweep 2.8s linear infinite;pointer-events:none}
+
+/* 5) "Hisaab saaf" ka jashn */
+.cele{position:fixed;left:50%;top:42%;z-index:1500;pointer-events:none}
+.celeok{position:absolute;left:-34px;top:-34px;width:68px;height:68px;border-radius:50%;background:#16a34a;color:#fff;font:800 38px/68px system-ui,sans-serif;text-align:center;box-shadow:0 10px 30px rgba(22,163,74,.5)}
+html.anim .celeok{animation:celePop 1.4s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes celePop{0%{transform:scale(0);opacity:0}22%{transform:scale(1.18);opacity:1}38%{transform:scale(1)}82%{opacity:1}100%{transform:scale(.9);opacity:0}}
+.cele i{position:absolute;left:-4px;top:-6px;width:8px;height:12px;border-radius:2px;opacity:0}
+html.anim .cele i{animation:celeFly 1.4s cubic-bezier(.15,.7,.3,1) both}
+@keyframes celeFly{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--x),calc(var(--y) + 130px)) rotate(var(--r));opacity:0}}
+
+html:not(.anim) .hwave{transition:none}
