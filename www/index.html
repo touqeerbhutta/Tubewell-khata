@@ -948,7 +948,7 @@ document.addEventListener('click',ev=>{
 },true);
 
 let _cq='', _csort=localStorage.getItem('tk_csort')||'naam', _topView='';
-const animOn=()=>document.documentElement.classList.contains('anim');
+const animOn=()=>{const c=document.documentElement.classList;return c.contains('anim')||c.contains('anim1')};   // anim = sab, anim1 = sirf ek baar chalne wali (halki)
 /* pani ke "tank" ka level: abhi ka baqaya, is phone par dekhe gaye sabse zyada baqaya ke muqable (10% se 70%) */
 const peakPct=(key,val)=>{let m={};try{m=JSON.parse(localStorage.getItem('tk_peak')||'{}')}catch(e){} const v=Math.max(0,val); let p=m[key]||0; if(v>p){p=v;m[key]=p;try{localStorage.setItem('tk_peak',JSON.stringify(m))}catch(e){}} return p>0?Math.round(10+60*Math.min(1,v/p)):10};
 function rKhata(){
@@ -1962,7 +1962,9 @@ function lookApply(){
   if(L.dens==='compact') h.setAttribute('data-dens','compact'); else h.removeAttribute('data-dens');
   if(L.bg==='waves') h.setAttribute('data-bg','waves'); else h.removeAttribute('data-bg');
   { const an=L.anim||'auto', rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
-    h.classList.toggle('anim',an==='on'||(an==='auto'&&!h.classList.contains('lite')&&!rm)); }
+    const lite=h.classList.contains('lite');
+    h.classList.toggle('anim',an==='on'||(an==='auto'&&!lite&&!rm));
+    h.classList.toggle('anim1',an==='auto'&&lite&&!rm); }
   const m=document.querySelector('meta[name=theme-color]'); if(m) m.content=getComputedStyle(h).getPropertyValue('--a1').trim()||'#08505d';
 }
 const _rsLook=rSettings;
@@ -1978,7 +1980,7 @@ rSettings=function(){
   <div class="chips"><button data-lbg="plain" class="${bg==='plain'?'on':''}">Saada</button><button data-lbg="waves" class="${bg==='waves'?'on':''}">Pani ki lehrein</button></div>
   <label style="margin-top:12px;display:block">Animations (ginti, lehrein, jashn)</label>
   <div class="chips"><button data-lanim="auto" class="${anim==='auto'?'on':''}">Auto</button><button data-lanim="on" class="${anim==='on'?'on':''}">On</button><button data-lanim="off" class="${anim==='off'?'on':''}">Off</button></div>
-  <div class="mu" style="margin-top:6px;font-size:12.5px">Auto: kam RAM wale phone par khud band rehti hain.</div></div>`);
+  <div class="mu" style="margin-top:6px;font-size:12.5px">Auto: kam RAM wale phone par sirf ek baar chalne wali (ginti, jashn) chalti hain; lehr aur boondein On par.</div></div>`);
   const save=(k,v)=>{const o=lookGet();o[k]=v;localStorage.setItem('tk_look',JSON.stringify(o));lookApply();rSettings()};
   document.querySelectorAll('[data-lacc]').forEach(b=>b.onclick=()=>save('acc',b.dataset.lacc));
   document.querySelectorAll('[data-ldens]').forEach(b=>b.onclick=()=>save('dens',b.dataset.ldens));

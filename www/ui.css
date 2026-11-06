@@ -427,10 +427,10 @@ body.noblur .fab{background:linear-gradient(135deg,var(--a2),var(--a3h))!importa
    ===================================================================== */
 /* 2) cards ek ek karke aayein + dabane par dabein */
 @keyframes cardIn{from{opacity:0;transform:translateY(14px)}}
-html.anim #clist.enter .card{animation:cardIn .42s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
-html.anim .card[data-c],html.anim .card[data-e]{transition:transform .14s cubic-bezier(.2,.8,.2,1),background-color .14s}
-html.anim .btn,html.anim .bb,html.anim .strt,html.anim .stp{transition:transform .14s cubic-bezier(.2,.8,.2,1)}
-html.anim .btn:active,html.anim .bb:active,html.anim .strt:active,html.anim .stp:active{transform:scale(.96)}
+html.anim #clist.enter .card,html.anim1 #clist.enter .card{animation:cardIn .42s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:calc(var(--i,0)*45ms)}
+html.anim .card[data-c],html.anim .card[data-e],html.anim1 .card[data-c],html.anim1 .card[data-e]{transition:transform .14s cubic-bezier(.2,.8,.2,1),background-color .14s}
+html.anim .btn,html.anim .bb,html.anim .strt,html.anim .stp,html.anim1 .btn,html.anim1 .bb,html.anim1 .strt,html.anim1 .stp{transition:transform .14s cubic-bezier(.2,.8,.2,1)}
+html.anim .btn:active,html.anim .bb:active,html.anim .strt:active,html.anim .stp:active,html.anim1 .btn:active,html.anim1 .bb:active,html.anim1 .strt:active,html.anim1 .stp:active{transform:scale(.96)}
 
 /* 3) hero mein pani ka tank (level = abhi ka baqaya, is phone par dekhe gaye sabse zyada ke muqable) */
 .hwave{position:absolute!important;left:0;right:0;bottom:0;height:var(--lv,25%);z-index:0!important;pointer-events:none;overflow:hidden;opacity:.2;transition:height .9s cubic-bezier(.2,.8,.2,1)}
@@ -458,10 +458,10 @@ html.anim .runc::after{content:'';position:absolute;top:0;bottom:0;left:0;width:
 /* 5) "Hisaab saaf" ka jashn */
 .cele{position:fixed;left:50%;top:42%;z-index:1500;pointer-events:none}
 .celeok{position:absolute;left:-34px;top:-34px;width:68px;height:68px;border-radius:50%;background:#16a34a;color:#fff;font:800 38px/68px system-ui,sans-serif;text-align:center;box-shadow:0 10px 30px rgba(22,163,74,.5)}
-html.anim .celeok{animation:celePop 1.4s cubic-bezier(.2,1.4,.4,1) both}
+html.anim .celeok,html.anim1 .celeok{animation:celePop 1.4s cubic-bezier(.2,1.4,.4,1) both}
 @keyframes celePop{0%{transform:scale(0);opacity:0}22%{transform:scale(1.18);opacity:1}38%{transform:scale(1)}82%{opacity:1}100%{transform:scale(.9);opacity:0}}
 .cele i{position:absolute;left:-4px;top:-6px;width:8px;height:12px;border-radius:2px;opacity:0}
-html.anim .cele i{animation:celeFly 1.4s cubic-bezier(.15,.7,.3,1) both}
+html.anim .cele i,html.anim1 .cele i{animation:celeFly 1.4s cubic-bezier(.15,.7,.3,1) both}
 @keyframes celeFly{0%{transform:translate(0,0) rotate(0);opacity:1}100%{transform:translate(var(--x),calc(var(--y) + 130px)) rotate(var(--r));opacity:0}}
 
-html:not(.anim) .hwave{transition:none}
+html:not(.anim):not(.anim1) .hwave{transition:none}
