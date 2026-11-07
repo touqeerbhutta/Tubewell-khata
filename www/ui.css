@@ -433,7 +433,7 @@ html.anim .btn,html.anim .bb,html.anim .strt,html.anim .stp,html.anim1 .btn,html
 html.anim .btn:active,html.anim .bb:active,html.anim .strt:active,html.anim .stp:active,html.anim1 .btn:active,html.anim1 .bb:active,html.anim1 .strt:active,html.anim1 .stp:active{transform:scale(.96)}
 
 /* 3) hero mein pani ka tank (level = abhi ka baqaya, is phone par dekhe gaye sabse zyada ke muqable) */
-.hwave{position:absolute!important;left:0;right:0;bottom:0;height:var(--lv,25%);z-index:0!important;pointer-events:none;overflow:hidden;opacity:.2;transition:height .9s cubic-bezier(.2,.8,.2,1)}
+.hwave{position:absolute!important;left:0;right:0;bottom:0;height:var(--lv,25%);z-index:0!important;pointer-events:none;overflow:hidden;opacity:.3;transition:height .9s cubic-bezier(.2,.8,.2,1)}
 .hwave::before{content:'';position:absolute;left:0;top:0;width:200%;height:22px;background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 22' preserveAspectRatio='none'><path fill='white' d='M0 11Q50 0 100 11T200 11T300 11T400 11V22H0Z'/></svg>") repeat-x;background-size:50% 100%}
 .hwave::after{content:'';position:absolute;left:0;right:0;top:21px;bottom:0;background:#fff}
 @keyframes waveMove{to{transform:translateX(-50%)}}

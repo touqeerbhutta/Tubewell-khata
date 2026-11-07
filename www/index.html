@@ -1345,6 +1345,7 @@ function closePg(from,dur){
     pgReset();
     if(view==='detail') return render();
     if(homeVer!==dataSig()) render(); else liveSync();
+    _fxKey=''; try{if(typeof fxReplay==='function') fxReplay()}catch(e){}
     $('#main').getAnimations().forEach(a=>a.cancel());
     window.scrollTo(0,pgBase);
   },d+40);
@@ -1921,10 +1922,12 @@ function cuRun(){
     if(!an||from===to) return;
     const pre=el.dataset.cp||'', t0=performance.now(), D=Math.min(900,350+Math.abs(to-from)/40);
     el._cu=true; el.textContent=pre+_nf.format(Math.round(from));
-    const step=now=>{const p=Math.min(1,(now-t0)/D),e=1-Math.pow(1-p,3);
-      el.textContent=pre+_nf.format(Math.round(from+(to-from)*e));
-      if(p<1) requestAnimationFrame(step); else {el._cu=false; liveTick()}};
-    requestAnimationFrame(step);
+    const go2=()=>{const t1=performance.now();
+      const step=now=>{const p=Math.min(1,(now-t1)/D),e=1-Math.pow(1-p,3);
+        el.textContent=pre+_nf.format(Math.round(from+(to-from)*e));
+        if(p<1) requestAnimationFrame(step); else {el._cu=false; liveTick()}};
+      requestAnimationFrame(step)};
+    if(document.getElementById('splash')){const w=setInterval(()=>{if(!document.getElementById('splash')){clearInterval(w);go2()}},80)} else go2();
   });
   document.querySelectorAll('.hwave[data-lv]').forEach(el=>{ if(el._wv===el.dataset.lv) return; el._wv=el.dataset.lv; requestAnimationFrame(()=>requestAnimationFrame(()=>el.style.setProperty('--lv',el.dataset.lv+'%'))) });
   const cl=document.getElementById('clist'); if(cl&&cl.classList.contains('enter')&&!cl._enT) cl._enT=setTimeout(()=>cl.classList.remove('enter'),900);
@@ -1950,7 +1953,32 @@ mut=function(t,op,row){
   if(c&&pre!==null&&pre>0&&ps(c).bq<=0) setTimeout(()=>celebrate(c.name),450);
 };
 const _rUi=render;
-render=function(){_rUi(); try{cuRun()}catch(e){window.__errs.push('cuRun: '+e.message)} if(view!=='detail') _topView=view};
+let _fxKey='';
+render=function(){
+  _rUi();
+  const key=view==='detail'?'d:'+cid:view; if(key!==_fxKey){_fxKey=key;_cuLast.clear()}   // nayi screen => ginti phir se
+  try{cuRun()}catch(e){window.__errs.push('cuRun: '+e.message)}
+  if(view!=='detail') _topView=view};
+/* screen dobara dikhne par (jaise detail se wapas aane par) entrance effects dobara chalao */
+function fxReplay(){
+  if(!animOn()) return;
+  const root=document.getElementById(view==='detail'?'pg2':'main'); if(!root) return;
+  const cl=document.getElementById('clist');
+  if(cl&&view!=='detail'){cl.classList.remove('enter'); void cl.offsetWidth; cl.classList.add('enter'); clearTimeout(cl._enT); cl._enT=setTimeout(()=>cl.classList.remove('enter'),900)}
+  root.querySelectorAll('[data-cu]').forEach(el=>{_cuLast.delete(el.dataset.cuk); el._cuDone=null});
+  root.querySelectorAll('.hwave[data-lv]').forEach(el=>{el.style.setProperty('--lv','0%'); el._wv=null});
+  cuRun();
+}
+/* app khulte hi splash hatne ke baad home ke effects ek dafa dikhao (splash ke neeche nazar nahi aate) */
+(function(){
+  const iv=setInterval(()=>{ if(!document.getElementById('splash')){clearInterval(iv); setTimeout(()=>{ if(view==='khata') fxList() },60)} },80);
+  setTimeout(()=>clearInterval(iv),6000);
+})();
+function fxList(){
+  if(!animOn()) return;
+  const cl=document.getElementById('clist'); if(!cl) return;
+  cl.classList.remove('enter'); void cl.offsetWidth; cl.classList.add('enter'); clearTimeout(cl._enT); cl._enT=setTimeout(()=>cl.classList.remove('enter'),900);
+}
 </script>
 <script>
 /* ---- Look: rang, card ka andaaz, background (Setting mein) ---- */
@@ -1980,7 +2008,12 @@ rSettings=function(){
   <div class="chips"><button data-lbg="plain" class="${bg==='plain'?'on':''}">Saada</button><button data-lbg="waves" class="${bg==='waves'?'on':''}">Pani ki lehrein</button></div>
   <label style="margin-top:12px;display:block">Animations (ginti, lehrein, jashn)</label>
   <div class="chips"><button data-lanim="auto" class="${anim==='auto'?'on':''}">Auto</button><button data-lanim="on" class="${anim==='on'?'on':''}">On</button><button data-lanim="off" class="${anim==='off'?'on':''}">Off</button></div>
-  <div class="mu" style="margin-top:6px;font-size:12.5px">Auto: kam RAM wale phone par sirf ek baar chalne wali (ginti, jashn) chalti hain; lehr aur boondein On par.</div></div>`);
+  <div class="mu" style="margin-top:6px;font-size:12.5px">Auto: kam RAM wale phone par sirf ek baar chalne wali (ginti, jashn) chalti hain; lehr aur boondein On par.</div>
+  <div class="mu" id="fxSt" style="margin-top:6px;font-size:12.5px"></div>
+  <button class="btn s" id="fxTest" style="margin-top:8px">\u25B6 Animations ka test</button></div>`);
+  { const c=document.documentElement.classList; const st=c.contains('anim')?'Poori animations chal rahi hain (lehr, boondein, ginti, jashn)':c.contains('anim1')?'Halki animations (ginti, jashn); lehr aur boondein band':'Band hain';
+    const e=$('#fxSt'); if(e) e.textContent='Abhi: '+st;
+    const t=$('#fxTest'); if(t) t.onclick=()=>{ if(!animOn()) return toast('Animations Off hain. Auto ya On chunein.'); celebrate('Test'); } }
   const save=(k,v)=>{const o=lookGet();o[k]=v;localStorage.setItem('tk_look',JSON.stringify(o));lookApply();rSettings()};
   document.querySelectorAll('[data-lacc]').forEach(b=>b.onclick=()=>save('acc',b.dataset.lacc));
   document.querySelectorAll('[data-ldens]').forEach(b=>b.onclick=()=>save('dens',b.dataset.ldens));
@@ -1992,6 +2025,7 @@ lookApply();
 </script>
 <script>
 /* ---- Setting > App ki sehat (offline wale sporadic masle pakarne ke liye) ---- */
+const APP_BUILD='fx3-07nov';   // har bade update par badalta ha, taake pata chale kaunsa build chal raha ha
 const _rsHealth=rSettings;
 rSettings=function(){
   _rsHealth();
@@ -2006,7 +2040,7 @@ rSettings=function(){
   <button class="btn s" id="hlCopy" style="margin-top:10px">Report copy karein</button></div>`;
   const upd=[...document.querySelectorAll('#main .card')].find(c=>{const b=c.querySelector('b');return b&&/App update/.test(b.textContent)});
   if(upd) upd.insertAdjacentHTML('afterend',hlHtml); else $('#main').insertAdjacentHTML('beforeend',hlHtml);
-  otaCurrent().then(v=>{const e=$('#hlVer'); if(e) e.textContent='App version: '+(v||'pata nahi')+(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()?'':' (browser)')}).catch(()=>{});
+  otaCurrent().then(v=>{const e=$('#hlVer'); if(e) e.textContent='App version: '+(v||'pata nahi')+' \u00b7 build '+APP_BUILD+(window.Capacitor&&Capacitor.isNativePlatform&&Capacitor.isNativePlatform()?'':' (browser)')}).catch(()=>{});
   $('#hlCopy').onclick=async()=>{
     const v=await otaCurrent();
     const t=['Tubewell Khata report','OTA version: '+v,'online: '+navigator.onLine,'storage: '+mb+' MB'+(window.__lsFull?' (bhar gayi thi)':''),
