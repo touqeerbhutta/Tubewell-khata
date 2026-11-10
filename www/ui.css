@@ -420,3 +420,8 @@ body.noblur .fab{background:linear-gradient(135deg,var(--a2),var(--a3h))!importa
 #rlBar span{flex:1 1 100%}
 #rlBar button{flex:1;border:0;border-radius:10px;padding:9px 10px;font-weight:800;font-size:13px;background:#c2540f;color:#fff}
 @media (prefers-color-scheme:dark){#rlBar{background:#3a2c12;border-color:#7a5a22;color:#f1c27d}}
+
+/* Baqaya tile par ✏️ button */
+.kb .hl{position:relative}
+.kb .hl .edbq{position:absolute;top:8px;right:8px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.22);padding:0;margin:0;font-size:14px;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:none;color:#fff}
+.kb .hl .edbq:active{background:rgba(255,255,255,.4);transform:scale(.92)}

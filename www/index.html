@@ -1717,7 +1717,7 @@ function rDetail(){
   const h=`<div class="khd"><div class="avw">${av(c.name)}<button class="edav" id="edAv" aria-label="Rang aur emoji badlein">\u{1F3A8}</button></div><div class="grow"><b>${esc(c.name)}</b><span>Rate Rs ${c.rate} per ghanta</span><span>Tubewell Khata &middot; ${today}</span></div></div>
   <div class="kb">
   <div><small>Total pani</small><b${lv('tp',k.ms)}>${dur(k.ms)}</b></div>
-  <div class="hl"><small>Baqaya</small><b${lv('bq',q.bq)}>${rs(q.bq)}</b><i${lv('bt',q.bms)}>${dur(q.bms)} pani</i></div></div>
+  <div class="hl"><small>Baqaya</small><b${lv('bq',q.bq)}>${rs(q.bq)}</b><i${lv('bt',q.bms)}>${dur(q.bms)} pani</i><button class="edbq" id="edBq" aria-label="Baqaya theek karein">\u270F\uFE0F</button></div></div>
   ${run?`<div class="runc"><div><b>Tubewell chal raha ha</b><small>Shuru: ${ymd(new Date(run.start_at))===ymd(new Date())?'':sd(ymd(new Date(run.start_at)))+', '}${tm(run.start_at)}</small><div class="lv"><span${lv('t',0)}>${durS(Date.now()-rst)}</span><b${lv('m',0)}>${rs(lvMoney(Date.now()-rst,run.rate))}</b></div></div><button class="stp" id="stopT">Band karo</button></div>`:`<button class="strt" id="startT"><span class="em">&#9654;</span> Tubewell shuru karein</button>`}
   <div class="bigb"><button class="bb w" id="addE"><span class="em">💧</span>Pani ki nayi entry</button><button class="bb g" id="payBtn"><span class="em">💰</span>Pesay jama karein</button></div>
   ${q.pp>0?`<div class="pend"><b>${rs(q.pp)}</b> jama hain, lekin abhi hisaab se kam nahi kiye<button class="btn" id="applyAll">Ab hisaab se kam karein</button></div>`:''}
@@ -1936,7 +1936,7 @@ lookApply();
 </script>
 <script>
 /* ---- Setting > App ki sehat (offline wale sporadic masle pakarne ke liye) ---- */
-const APP_BUILD='saada-07nov';   // har bade update par badalta ha, taake pata chale kaunsa build chal raha ha
+const APP_BUILD='saada2-09nov';   // har bade update par badalta ha, taake pata chale kaunsa build chal raha ha
 const _rsHealth=rSettings;
 rSettings=function(){
   _rsHealth();
@@ -1963,6 +1963,45 @@ rSettings=function(){
   };
 };
 
+</script>
+<script>
+/* ---- Baqaya theek karein: "pehle ka hisaab" is tarah badalta ha ke baqaya aap ki likhi raqam ho jaye ---- */
+document.body.insertAdjacentHTML('beforeend',`<div class="modal" id="bqs" hidden><div class="sheet">
+<h3>\u{1F4B0} Baqaya theek karein</h3>
+<div class="mu" id="bqInfo"></div>
+<label>Naya baqaya (Rs)</label><input type="number" inputmode="decimal" step="any" id="bqV" placeholder="jaise 38200">
+<div class="prev" id="bqP">-</div>
+<button class="btn" id="bqSave">Save karein</button>
+<button class="btn s" id="bqX">Band karein</button>
+</div></div>`);
+let _bqC=null, _bqBase=0;
+function bqNew(){
+  const t=parseFloat($('#bqV').value); if(isNaN(t)||!_bqC) return null;
+  const old=+_bqC.opening||0, nw=Math.round((old+(t-_bqBase))*100)/100;
+  return {t,old,nw};
+}
+function bqPrev(){
+  const r=bqNew(), p=$('#bqP');
+  if(!r){p.textContent='-';return}
+  p.textContent='Purana hisaab: '+rs(r.old)+'  \u2192  '+rs(r.nw);
+}
+function openBq(){
+  const c=customers.find(x=>x.id===cid); if(!c) return;
+  _bqC=c; _bqBase=ps(c).bq;
+  const run=entries.some(e=>e.customer_id===c.id&&isRun(e));
+  $('#bqInfo').innerHTML=esc(c.name)+' \u00b7 abhi baqaya '+rs(_bqBase)+'<br><span style="font-size:12.5px">Jo raqam likhenge, baqaya wohi ho jayega. Ye "purana hisaab" ko badal kar hota ha, aap ki purani entries nahi badalti.'+(run?' Chalta hua tubewell band hone par uska hisaab alag se judega.':'')+'</span>';
+  $('#bqV').value=Math.round(_bqBase); bqPrev(); $('#bqs').hidden=false;
+  setTimeout(()=>{try{$('#bqV').focus();$('#bqV').select()}catch(e){}},250);
+}
+document.addEventListener('click',e=>{ if(e.target.closest&&e.target.closest('#edBq')){e.stopPropagation();openBq()} },true);
+$('#bqV').oninput=bqPrev;
+$('#bqX').onclick=()=>$('#bqs').hidden=true;
+$('#bqSave').onclick=()=>{
+  const r=bqNew(); if(!r) return toast('Baqaya ki raqam likhein');
+  $('#bqs').hidden=true;
+  mut('customers','upd',{id:_bqC.id,opening:r.nw});
+  toast('Baqaya '+rs(r.t)+' ho gaya');
+};
 </script>
 <script>
 /* ---- shuru: upar ke extra hisson mein koi galti ho to bhi app khulni chahiye ---- */
